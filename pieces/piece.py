@@ -1,4 +1,3 @@
-from tabnanny import check
 from .move import *
 
 class Piece:
@@ -10,6 +9,7 @@ class Piece:
 		self.directions = []
 		self.pinDirection = ()
 		self.type = ""
+		self.lastMoves = []
 
 	def __str__(self) -> str:
 		return self.ID
@@ -17,38 +17,48 @@ class Piece:
 	def getXY(self, position):
 		return (position % 8, position // 8)
 	
-	def removeInvalidMoves(self, board, moves :list(Move), kingInfo :tuple(int)):
+	def removeInvalidMoves(self, board, moves :list[Move], kingInfo):
 		inCheck, pins, checks, kingPos = kingInfo
+
+		if inCheck ^ bool(len(checks)):
+			print("inCheck and len(checks) desync")
 		if not inCheck:
 			return
-		
-		
+
+		requiredSquares = []
+		if len(checks) == 0:
+			return
+
 		if len(checks) == 1:
 			check = checks[0]
 			# if crashing come back here
 			# not checking if move is valid
 			direction = check[3] * 8 + check[2]
 			endPos = check[1] * 8 + check[0]
-			i = 0
+			i = 1
 
-			requiredSquares = []
 			while kingPos + direction * i != endPos + direction:
 				requiredSquares.append(kingPos + direction * i)
 				i += 1
 			
-			for move in moves:
+			# print(len(moves))
+			for i in range(len(moves)-1, -1, -1):
+				move = moves[i]
+				# print(move)
+				# print(move.endPos in requiredSquares)
 				if not move.endPos in requiredSquares:
-					moves.remove(move)
+					# print("\t", move)
+					moves.pop(i)
+					continue
+				# print('cum')
 		else:
 			moves = []
-
-
 	
-	def getMoves(self, board, position) -> list[Move]:
+	def getMoves(self, board, position, attacking=False) -> list[Move]:
 		availableMoves = []
 
 		x, y = self.getXY(position)
-		print(position)
+		# print(position)
 		pinDirection = ()
 
 		board.refreshChecksandPins()
@@ -56,19 +66,19 @@ class Piece:
 		inCheck, pins, checks, kingPos = board.infoDict[self.color]
 		piecePinned = False
 		for x in range(len(pins)-1, -1, -1):
-			print(pins[x])
-			print(x, y)
+			# print(pins[x])
+			# print(x, y)
 			if pins[x][0] == x and pins[x][1] == y:
 				piecePinned = True
 				pinDirection = (pins[x][2], pins[x][3])
 				board.whiteInfo[1].remove(pins[x])
-				print("pin found")
-				print(pins[x])
+				# print("pin found")
+				# print(pins[x])
 				# pins.pop(x)
 				break
 
 
-		print(f"piecePinned = {piecePinned}")
+		# print(f"piecePinned = {piecePinned}")
 		for direction in self.directions:
 			# print(f"direction == pinDirection = {direction == pinDirection}")
 			if piecePinned and direction != pinDirection:
@@ -89,17 +99,22 @@ class Piece:
 				
 				if space.color != self.color:
 					availableMoves.append(Move(self, space, position, endPos))
+					break
+				
+				if attacking:
+					availableMoves.append(Move(self, space, position, endPos))
+					break
 				break
 		
 		# check if in check
-		
-		
-			self.removeInvalidMoves(board, availableMoves, board.infoDict[self.color])
+		if not attacking:
+			board.refreshChecksandPins()
+			self.removeInvalidMoves(board, availableMoves, king.getChecksandPins(board, king.getPos(board)) + (king.getPos(board),))
 
 		return availableMoves
 
 	def getAttackingMoves(self, board, position) -> list[Move]:
-		return self.getMoves(board, position)
+		return self.getMoves(board, position, True)
 
 	def moveInbounds(self, x, y, direction, depth):
 		temp = direction[0] * depth

@@ -18,9 +18,12 @@ class Pawn(Piece):
 		pinDirection = ()
 
 		board.refreshChecksandPins()
-		pins = board.infoDict[self.color][1]
+		king = board.kingDict[self.color]
+		kingPos = king.getPos(board)
+		inCheck, pins, checks = king.getChecksandPins(board, king.getPos(board))
+
 		piecePinned = False
-		# print(i, j)
+		# print(pins)
 		for x in range(len(pins)-1, -1, -1):
 			# print(pins[x][0])
 			# print(pins[x][1])
@@ -28,9 +31,9 @@ class Pawn(Piece):
 			if pins[x][0] == i and pins[x][1] == j:
 				# print(f"pin found, {i, j}")
 				piecePinned = True
-				# print(piecePinned)
+				print(piecePinned)
 				pinDirection = (pins[x][2], pins[x][3])
-				board.whiteInfo[1].remove(pins[x])
+				pins.remove(pins[x])
 				# pins.pop(x)
 				break
 
@@ -74,6 +77,9 @@ class Pawn(Piece):
 			if space != "--" and space.color != self.color:
 				availableMoves.append(Move(self, space, position, endPos))
 		
+		# print("cum")
+		board.refreshChecksandPins()
+		self.removeInvalidMoves(board, availableMoves, king.getChecksandPins(board, king.getPos(board)) + (king.getPos(board),))
 
 		return availableMoves
 
@@ -84,8 +90,9 @@ class Pawn(Piece):
 		pinDirection = ()
 
 		board.refreshChecksandPins()
-		pins = board.whiteInfo[1]
-		piecePinned = False
+		king = board.kingDict[self.color]
+		inCheck, pins, checks, kingPos = board.infoDict[self.color]
+
 		# print(i, j)
 		for x in range(len(pins)-1, -1, -1):
 			# print(pins[x][0])
@@ -96,7 +103,7 @@ class Pawn(Piece):
 				piecePinned = True
 				# print(piecePinned)
 				pinDirection = (pins[x][2], pins[x][3])
-				board.whiteInfo[1].remove(pins[x])
+				pins[1].remove(pins[x])
 				# pins.pop(x)
 				break
 

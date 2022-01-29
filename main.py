@@ -1,13 +1,10 @@
 import pygame, os
 
-from pieces.piece  import Piece
-from pieces.bishop import Bishop
-from pieces.king   import King
-from pieces.knight import Knight
-from pieces.pawn   import Pawn
-from pieces.queen  import Queen
-from pieces.rook   import Rook
+
 from pieces.move   import *
+from pieces.piece import Piece
+
+from fen import Fen
 
 WIDTH = HEIGHT = 768
 WINDOWSIZE = (WIDTH, HEIGHT)
@@ -40,6 +37,7 @@ class Board:
 		'wQ': 10,
 		'wR': 11
 	}
+	infoDict = {}
 
 	def loadImages(self):
 		self.images = []
@@ -52,8 +50,17 @@ class Board:
 	def __init__(self) -> None:
 		self.loadImages()
 
-		self.blackKing = King("b")
-		self.whiteKing = King("w")
+
+
+		self.fen = Fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+
+		self.board = self.fen.boardParse()
+
+		self.whiteKing = self.board[60]
+		self.blackKing = self.board[ 4]
+
+		self.whiteInfo = self.whiteKing.getChecksandPins(self, self.whiteKing.getPos(self)) + (60,)
+		self.blackInfo = self.blackKing.getChecksandPins(self, self.blackKing.getPos(self)) + ( 4,)
 
 		self.kingDict = {
 			"w": self.whiteKing,
@@ -61,53 +68,65 @@ class Board:
 		}
 
 		self.infoDict = {
-			"w": self.whiteInfo,
-			"b": self.blackInfov
+			"w": self.whiteKing.getChecksandPins(self, self.whiteKing.getPos(self)) + (self.whiteKing.getPos(self),),
+			"b": self.blackKing.getChecksandPins(self, self.blackKing.getPos(self)) + (self.blackKing.getPos(self),)
+		}
+	
+	def reset(self):
+		for i in range(len(self.board)-1, -1, -1):
+			del self.board[i]
+
+		self.fen.reset()
+
+		self.board = self.fen.boardParse()
+
+		self.whiteKing = self.board[60]
+		self.blackKing = self.board[ 4]
+
+		self.whiteInfo = self.whiteKing.getChecksandPins(self, self.whiteKing.getPos(self)) + (60,)
+		self.blackInfo = self.blackKing.getChecksandPins(self, self.blackKing.getPos(self)) + ( 4,)
+
+		self.kingDict = {
+			"w": self.whiteKing,
+			"b": self.blackKing
 		}
 
-
-		Board.board [0] =   Rook("b")
-		Board.board [1] = Knight("b")
-		Board.board [2] = Bishop("b")
-		Board.board [3] =  Queen("b")
-		Board.board [4] = self.blackKing
-		Board.board [5] = Bishop("b")
-		Board.board [6] = Knight("b")
-		Board.board [7] =   Rook("b")
-
-		Board.board [8] =   Pawn("b")
-		Board.board [9] =   Pawn("b")
-		Board.board[10] =   Pawn("b")
-		Board.board[11] =   Pawn("b")
-		Board.board[12] =   Pawn("b")
-		Board.board[13] =   Pawn("b")
-		Board.board[14] =   Pawn("b")
-		Board.board[15] =   Pawn("b")
-
-		Board.board[48] =   Pawn("w")
-		Board.board[49] =   Pawn("w")
-		Board.board[50] =   Pawn("w")
-		Board.board[51] =   Pawn("w")
-		Board.board[52] =   Pawn("w")
-		Board.board[53] =   Pawn("w")
-		Board.board[54] =   Pawn("w")
-		Board.board[55] =   Pawn("w")
-		
-		Board.board[56] =   Rook("w")
-		Board.board[57] = Knight("w")
-		Board.board[58] = Bishop("w")
-		Board.board[59] =  Queen("w")
-		Board.board[60] = self.whiteKing
-		Board.board[61] = Bishop("w")
-		Board.board[62] = Knight("w")
-		Board.board[63] =   Rook("w")
-		self.whiteInfo = self.whiteKing.getChecksandPins(self, self.whiteKing.getPos(self))
-		self.blackInfo = self.blackKing.getChecksandPins(self, self.blackKing.getPos(self))
+		self.infoDict = {
+			"w": self.whiteKing.getChecksandPins(self, self.whiteKing.getPos(self)) + (self.whiteKing.getPos(self),),
+			"b": self.blackKing.getChecksandPins(self, self.blackKing.getPos(self)) + (self.blackKing.getPos(self),)
+		}
 	
 	def refreshChecksandPins(self):
-		kingPos = (self.updateKingPos())
-		self.whiteInfo = self.whiteKing.getChecksandPins(self, self.whiteKing.getPos(self)) + (kingPos[0])
-		self.blackInfo = self.blackKing.getChecksandPins(self, self.blackKing.getPos(self)) + (kingPos[1])
+		kingPos = self.updateKingPos()
+		self.whiteInfo = self.whiteKing.getChecksandPins(self, kingPos[0]) + (kingPos[0],)
+		self.blackInfo = self.blackKing.getChecksandPins(self, kingPos[1]) + (kingPos[1],)
+	
+	def checkForCheckmate(self):
+		for j in range(2):
+			king = [self.whiteKing, self.blackKing][j]
+
+			team = []
+			for i in range(len(self.board)):
+				space = self.board[i]
+				if space == "--":
+					continue
+				if space.color != king.color:
+					continue
+				team.append((space, i))
+			
+			totalMoves = []
+			for piece in team:
+				moves = piece[0].getMoves(self, piece[1])
+				if piece[0].type == "K":
+					king.removeInvalidMoves(self, moves, king.getChecksandPins(self, king.getPos(self)) + (king.getPos(self),))
+				totalMoves.extend(moves)
+
+			if totalMoves == []:
+				print("Checkmate!")
+				
+				self.reset()
+
+
 	
 	def updateKingPos(self):
 		for i in range(len(self.board)):
@@ -135,6 +154,7 @@ class Board:
 				return
 
 			move = Move(space, self.getSpace(index), self.selectedIndex, index)
+
 			if move in self.selectedMoves: # if index in in avialable moves
 				self.moveHistory.append(move)
 				move.makeMove()
@@ -145,15 +165,22 @@ class Board:
 				self.futureMoves = []
 				print(self.whiteInfo)
 				print(self.blackInfo)
+				self.fen.switchTurns()
+				self.checkForCheckmate()
 				return
+
 			if self.getSpace(index) == "--": # selected index is not a piece
 				self.selectedIndex = -1
 				self.selectedMoves = []
 				return
 			
 			# guarenteed that clicked index is a different piece than is selected
-			self.selectedIndex = index
-			self.selectedMoves = self.getSpace(self.selectedIndex).getMoves(self, self.selectedIndex)
+			if self.getSpace(index).color == self.fen.colorToMove:
+				self.selectedIndex = index
+				self.selectedMoves = self.getSpace(self.selectedIndex).getMoves(self, self.selectedIndex)
+
+			for move in self.selectedMoves:
+				print(move)
 
 
 			return
@@ -161,7 +188,13 @@ class Board:
 
 		# index is not selected
 		if self.getSpace(index) != "--":
-			self.selectedIndex = index
+			if self.getSpace(index).color == self.fen.colorToMove:
+				self.selectedIndex = index
+				self.selectedMoves = self.getSpace(self.selectedIndex).getMoves(self, self.selectedIndex)
+
+		for move in self.selectedMoves:
+				print(move)
+
 			
 
 	def getSpace(self, index) -> Piece:
@@ -207,20 +240,17 @@ def renderHighlighted(b :Board):
 		pygame.draw.rect(highlightedScreen, (255, 0, 0, 100), square, 0)
 	
 	SCREEN.blit(highlightedScreen, (0, 0))
-		
 
 def renderMoves(b :Board):
 	if b.selectedIndex != -1:
-		if b.selectedMoves == []:
-			b.selectedMoves = b.getSpace(b.selectedIndex).getMoves(b, b.selectedIndex)
-			for move in b.selectedMoves:
-				print(move)
 		piece = b.getSpace(b.selectedIndex)
 		if piece == "--":
 			b.selectedIndex = -1
 			return
+
 		for move in b.selectedMoves:
 			pygame.draw.circle(SCREEN, (255, 0, 0), getIndexToPos(move.endPos), SQ_SIZE/5)
+
 
 def renderSelected(b :Board):
 	if b.selectedIndex != -1:
@@ -270,13 +300,20 @@ def main():
 					move = board.moveHistory.pop(-1)
 					move.undo()
 					board.futureMoves.append(move)
+					board.fen.switchTurns()
 				elif e.key == pygame.K_y and len(board.futureMoves) > 0:
 					move = board.futureMoves.pop(-1)
 					move.redo()
 					board.moveHistory.append(move)
+					board.fen.switchTurns()
 				elif e.key == pygame.K_v:
 					print(board.whiteInfo)
 					print(board.blackInfo)
+
+					print(board.getSpace(board.selectedIndex).timesMoved)
+
+					# for pin in board.whiteInfo[1] + board.blackInfo[1]:
+					# 	print(board.getSpace(pin[1]*8 + pin[0]))
 
 		
 		render(board)
