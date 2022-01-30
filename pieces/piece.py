@@ -37,11 +37,12 @@ class Piece:
 			endPos = check[1] * 8 + check[0]
 			i = 1
 
+
 			while kingPos + direction * i != endPos + direction:
 				requiredSquares.append(kingPos + direction * i)
 				i += 1
 			
-			# print(len(moves))
+			# print(requiredSquares)
 			for i in range(len(moves)-1, -1, -1):
 				move = moves[i]
 				# print(move)
@@ -57,24 +58,24 @@ class Piece:
 	def getMoves(self, board, position, attacking=False) -> list[Move]:
 		availableMoves = []
 
-		x, y = self.getXY(position)
+		i, j = self.getXY(position)
 		# print(position)
 		pinDirection = ()
 
-		board.refreshChecksandPins()
+		# board.refreshChecksandPins()
 		king = board.kingDict[self.color]
-		inCheck, pins, checks, kingPos = board.infoDict[self.color]
+		inCheck, pins, checks, kingPos = king.getChecksandPins(board, king.getPos(board)) + (king.getPos(board),)
 		piecePinned = False
 		for x in range(len(pins)-1, -1, -1):
 			# print(pins[x])
-			# print(x, y)
-			if pins[x][0] == x and pins[x][1] == y:
+			# print(i, j)
+			if pins[x][0] == i and pins[x][1] == j:
 				piecePinned = True
 				pinDirection = (pins[x][2], pins[x][3])
-				board.whiteInfo[1].remove(pins[x])
 				# print("pin found")
 				# print(pins[x])
-				# pins.pop(x)
+				# pins.remove(pins[x])
+				pins.pop(x)
 				break
 
 

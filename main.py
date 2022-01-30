@@ -1,3 +1,4 @@
+from tkinter.ttk import PanedWindow
 import pygame, os
 
 
@@ -37,7 +38,13 @@ class Board:
 		'wQ': 10,
 		'wR': 11
 	}
-	infoDict = {}
+
+	ranksToRows = {'1': 7, '2': 6, '3': 5, '4': 4,
+				   '5': 3, '6': 2, '7': 1, '8': 0}
+	rowsToRanks = {v: k for k, v in ranksToRows.items()}
+	filesToCols = {'a': 0, 'b': 1, 'c': 2, 'd': 3,
+				   'e': 4, 'f': 5, 'g': 6, 'h': 7}
+	colsToFiles = {v: k for k, v in filesToCols.items()}
 
 	def loadImages(self):
 		self.images = []
@@ -52,12 +59,18 @@ class Board:
 
 
 
-		self.fen = Fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+		self.fen = Fen("8/4npk1/5p1p/1Q5P/1p4P1/4r3/7q/3K1R2 b - - 1 49")
+		
+		# self.fen = Fen("8/6k1/5p1p/4Q2P/1n4P1/8/8/3K4 w - - 1 49")
+		# self.fen = Fen("8/8/3k1nQP/8/6P1/8/8/3K4 b - - 1 49")
+		# self.fen = Fen("3rkbnr/4p1pp/p7/8/2B5/8/2PQ2PP/R1BQK1NR w KQkq - 0 15")
+		self.fen.reset()
 
 		self.board = self.fen.boardParse()
 
-		self.whiteKing = self.board[60]
-		self.blackKing = self.board[ 4]
+		pos = self.updateKingPos()
+		self.whiteKing = self.board[pos[0]]
+		self.blackKing = self.board[pos[1]]
 
 		self.whiteInfo = self.whiteKing.getChecksandPins(self, self.whiteKing.getPos(self)) + (60,)
 		self.blackInfo = self.blackKing.getChecksandPins(self, self.blackKing.getPos(self)) + ( 4,)
@@ -101,6 +114,23 @@ class Board:
 		self.whiteInfo = self.whiteKing.getChecksandPins(self, kingPos[0]) + (kingPos[0],)
 		self.blackInfo = self.blackKing.getChecksandPins(self, kingPos[1]) + (kingPos[1],)
 	
+	def checkForPromotion(self, move :Move):
+		if move.pieceMoved.type == "p":
+			if move.endPos // 8 in [0, 7]:
+				self.fen.promotePawn(self.board, move.endPos)
+		pass
+
+	def checkForEnPassant(self, move :Move):
+		if move.pieceMoved.type == "p":
+			if abs(move.endPos - move.startPos) == 16:
+				index = move.startPos + 8 if move.pieceMoved.color == "b" else move.startPos - 8
+				self.fen.setEnPassant(index)
+				# print(self.fen.enPassant)
+				return
+		self.fen.setEnPassant(-1)
+		
+		pass
+
 	def checkForCheckmate(self):
 		for j in range(2):
 			king = [self.whiteKing, self.blackKing][j]
@@ -113,21 +143,35 @@ class Board:
 				if space.color != king.color:
 					continue
 				team.append((space, i))
+			inCheck, pins, checks = king.getChecksandPins(self, king.getPos(self))
 			
 			totalMoves = []
 			for piece in team:
-				moves = piece[0].getMoves(self, piece[1])
-				if piece[0].type == "K":
-					king.removeInvalidMoves(self, moves, king.getChecksandPins(self, king.getPos(self)) + (king.getPos(self),))
-				totalMoves.extend(moves)
+				moves = piece[0].getAttackingMoves(self, piece[1])
+				# if piece[0].type == "K":
+				# 	print(moves)
 
-			if totalMoves == []:
-				print("Checkmate!")
+				king.removeInvalidMoves(self, moves, king.getChecksandPins(self, king.getPos(self)) + (king.getPos(self),))
 				
-				self.reset()
+				# print(piece[0].type)
+				# for move in moves:
+				# 	print("\t", move)
+				# print()
+				totalMoves.extend(moves)
+			
+			totalMoves.extend(king.getAttackingMoves(self, king.getPos(self)))
+		
+			# for move in totalMoves:
+			# 	print(move)
+			# print()
+			if totalMoves == []:
+				print(f"Ending FEN string: {self.fen.getFenString(self.board)}")
+				if inCheck:
+					print("Checkmate!")
+					return
 
+				print("Draw!")
 
-	
 	def updateKingPos(self):
 		for i in range(len(self.board)):
 			space = self.getSpace(i)
@@ -153,11 +197,20 @@ class Board:
 				self.selectedMoves = []
 				return
 
-			move = Move(space, self.getSpace(index), self.selectedIndex, index)
-
-			if move in self.selectedMoves: # if index in in avialable moves
+			tempMove = Move(space, self.getSpace(index), self.selectedIndex, index)
+			
+			if tempMove in self.selectedMoves: # if index in in avialable moves
+				move = self.selectedMoves[self.selectedMoves.index(tempMove)]
 				self.moveHistory.append(move)
+				if space.type == "p":
+					self.fen.halfMoveCount = 0
+				else:
+					self.fen.halfMoveCount += 1
+
+				self.fen.switchTurns(self.board)
 				move.makeMove()
+				self.checkForPromotion(move)
+				self.checkForEnPassant(move)
 				self.refreshChecksandPins()
 
 				self.selectedIndex = -1
@@ -165,7 +218,7 @@ class Board:
 				self.futureMoves = []
 				print(self.whiteInfo)
 				print(self.blackInfo)
-				self.fen.switchTurns()
+				print(self.fen.getFenString(self.board))
 				self.checkForCheckmate()
 				return
 
@@ -178,9 +231,12 @@ class Board:
 			if self.getSpace(index).color == self.fen.colorToMove:
 				self.selectedIndex = index
 				self.selectedMoves = self.getSpace(self.selectedIndex).getMoves(self, self.selectedIndex)
+			else:
+				self.selectedIndex = -1
+				self.selectedMoves = []
 
-			for move in self.selectedMoves:
-				print(move)
+			# for move in self.selectedMoves:
+			# 	print(move)
 
 
 			return
@@ -192,8 +248,8 @@ class Board:
 				self.selectedIndex = index
 				self.selectedMoves = self.getSpace(self.selectedIndex).getMoves(self, self.selectedIndex)
 
-		for move in self.selectedMoves:
-				print(move)
+		# for move in self.selectedMoves:
+		# 		print(move)
 
 			
 
@@ -300,21 +356,27 @@ def main():
 					move = board.moveHistory.pop(-1)
 					move.undo()
 					board.futureMoves.append(move)
-					board.fen.switchTurns()
+
+					board.fen.undo()
+					board.fen.refreshBoard(board.board)
 				elif e.key == pygame.K_y and len(board.futureMoves) > 0:
 					move = board.futureMoves.pop(-1)
 					move.redo()
 					board.moveHistory.append(move)
-					board.fen.switchTurns()
+
+					board.fen.redo()
+					board.fen.refreshBoard(board.board)
 				elif e.key == pygame.K_v:
 					print(board.whiteInfo)
 					print(board.blackInfo)
 
-					print(board.getSpace(board.selectedIndex).timesMoved)
+					# print(board.fen.getFenString(board.board))
+					print()
+					for string in board.fen.history:
+						print(string)
+					print()
 
-					# for pin in board.whiteInfo[1] + board.blackInfo[1]:
-					# 	print(board.getSpace(pin[1]*8 + pin[0]))
-
+					print("Current FEN String\n", board.fen.getFenString(board.board))
 		
 		render(board)
 			
