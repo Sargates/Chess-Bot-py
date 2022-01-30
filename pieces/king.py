@@ -20,8 +20,10 @@ class King(Piece):
 		takenSquares = {enemyMoves[x].endPos for x in range(len(enemyMoves))}
 		takenSquares = sorted(list(takenSquares))
 
-		# for move in enemyMoves:
-		# 	print(move)
+
+		inCheck, pins, checks, kingPos = self.getChecksandPins(board, self.getPos(board)) + (self.getPos(board),)
+		# print(inCheck, pins, checks, kingPos)
+		# print(takenSquares)
 
 		for direction in self.directions:
 			for depth in self.moveDepths:
@@ -30,21 +32,30 @@ class King(Piece):
 
 				x = direction[0]
 				y = direction[1]
+				if inCheck:
+					for check in checks:
+						# print(check, direction)
+						if not (check[2] == -x and check[3] == -y):
+							break
+					else:
+						continue
 
 				endPos = position + (8*y + x)
 				space = board.getSpace(endPos)
-
-				# print(endPos)
 
 				if endPos in takenSquares:
 					continue
 
 				if space == "--":
-					availableMoves.append(Move(self, space, position, endPos))
+					m = Move(self, space, position, endPos)
+					availableMoves.append(m)
+					# print(m, 1)
 					continue
 				
 				if space.color != self.color:
-					availableMoves.append(Move(self, space, position, endPos))
+					m = Move(self, space, position, endPos)
+					availableMoves.append(m)
+					# print(m, 2)
 				break
 
 		return availableMoves
@@ -54,6 +65,11 @@ class King(Piece):
 
 		x, y = self.getXY(position)
 
+		enemyMoves = self.getEnemyMoves(board)
+
+		takenSquares = {enemyMoves[x].endPos for x in range(len(enemyMoves))}
+		takenSquares = sorted(list(takenSquares))
+
 		for direction in self.directions:
 			for depth in self.moveDepths:
 				if not self.moveInbounds(*self.getXY(position), direction, 1):
@@ -65,7 +81,8 @@ class King(Piece):
 				endPos = position + (8*y + x)
 				space = board.getSpace(endPos)
 
-				# print(endPos)
+				if endPos in takenSquares:
+					continue
 
 				if space == "--":
 					availableMoves.append(Move(self, space, position, endPos))
@@ -83,11 +100,15 @@ class King(Piece):
 			if board.board[i] == "--" or board.board[i].color == self.color:
 				continue
 
+			if board.board[i].type == "K":
+				continue
+
 			for move in board.board[i].getAttackingMoves(board, i):
 				if not move in enemyMoves:
 					enemyMoves.append(move)
 		
 		return enemyMoves
+
 
 	def getPos(self, b):
 		for i in range(len(b.board)):
@@ -110,8 +131,10 @@ class King(Piece):
 				if not self.moveInbounds(*self.getXY(position), dir, i):
 					break
 				endSpace = board.getSpace(position + (dir[1] * 8 + dir[0]) * i)
+
 				if endSpace == "--":
 					continue
+
 				if endSpace.color == self.color and endSpace.type != 'K':
 					if possiblePin == ():
 						possiblePin = (endPos[0], endPos[1], dir[0], dir[1])
