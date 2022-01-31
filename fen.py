@@ -18,6 +18,7 @@ class Fen:
 	def __init__(self, string :str) -> None:
 		board, colorToMove, castling, enPassant, halfMoveCount, fullMoveCount = string.split(" ")
 
+		self.string = string
 		self.board = board
 		self.colorToMove = colorToMove
 		self.castling = castling
@@ -40,15 +41,54 @@ class Fen:
 
 	def undo(self):
 		state = self.history.pop(-1)
+		self.future.append(self.string)
 		self.string = state
 		self.refresh()
-		self.future.append(state)
 	
 	def redo(self):
 		state = self.future.pop(-1)
+		self.history.append(state)
 		self.string = state
 		self.refresh()
-		self.history.append(state)
+
+	def refreshCastling(self, board):
+		bQ = [2, 3]
+		bK = [5, 6]
+		wQ = [58 ,59]
+		wK = [61, 62]
+		castle = ""
+		for pos in board.updateKingPos():
+			king = board.getSpace(pos)
+			if not ((king.color == "w" and pos == 60) or (king.color == "b" and pos == 4)):
+				# print(1)
+				continue
+
+			if king.timesMoved != 0:
+				# print(2)
+				continue
+
+			qRook = board.getSpace(pos-4)
+			kRook = board.getSpace(pos+3)
+			inCheck, pins, checks = king.getChecksandPins(board, pos)
+
+			if inCheck:
+				# print(3)
+				continue
+
+			if kRook != "--" and kRook.timesMoved == 0:
+				if king.color == "w":
+					castle += "K"
+				else:
+					castle += "k"
+			if qRook != "--" and qRook.timesMoved == 0:
+				if king.color == "w":
+					castle += "Q"
+				else:
+					castle += "q"
+		
+		if castle == "":
+			castle = "-"
+		self.castling = castle
 
 	def getEnPassantPos(self):
 		if self.enPassant == "-":
@@ -127,14 +167,11 @@ class Fen:
 					boardString += board[pos].type.lower()
 				else:
 					boardString += board[pos].type.upper()
-				
 
 			if t != 0:
 				boardString += str(t)
-			
 
 			t = 0
-
 			if i != 7:
 				boardString += "/"
 		
@@ -143,16 +180,18 @@ class Fen:
 		return boardString
 	
 	def getFenString(self, board) -> str:
-		self.refreshBoard(board)	
-		return f"{self.board} {self.colorToMove} {self.castling} {self.enPassant} {self.halfMoveCount} {self.fullMoveCount}"
+		self.refreshBoard(board)
+		self.string = f"{self.board} {self.colorToMove} {self.castling} {self.enPassant} {self.halfMoveCount} {self.fullMoveCount}"
+		return self.string
 
 	def switchTurns(self, board):
 		self.future = []
+		string = self.getFenString(board)
+		print(string)
+		self.history.append(string)
 		if self.colorToMove == "w":
-			self.history.append(self.getFenString(board))
 			self.colorToMove = "b"
 			return
-		self.history.append(self.getFenString(board))
 		self.colorToMove = "w"
 		self.fullMoveCount += 1
 		

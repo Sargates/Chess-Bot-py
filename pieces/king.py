@@ -9,6 +9,13 @@ class King(Piece):
 		self.type = "K"
 		self.ID = color + self.type
 		self.inCheck = False
+
+		self.castlingDict = {
+			"K": (60, 63),
+			"Q": (60, 56),
+			"k": (4, 7),
+			"q": (4, 0)
+		}
 	
 	def getMoves(self, board, position) -> list[Move]:
 		availableMoves = []
@@ -47,16 +54,42 @@ class King(Piece):
 					continue
 
 				if space == "--":
-					m = Move(self, space, position, endPos)
-					availableMoves.append(m)
-					# print(m, 1)
+					availableMoves.append(Move(self, space, position, endPos))
 					continue
 				
 				if space.color != self.color:
-					m = Move(self, space, position, endPos)
-					availableMoves.append(m)
-					# print(m, 2)
+					availableMoves.append(Move(self, space, position, endPos))
 				break
+
+		board.fen.refreshCastling(board)
+		castle = board.fen.castling
+
+		
+		castleToInterval = {
+			"q": [2, 3],
+			"k": [5, 6],
+			"Q": [58 ,59],
+			"K": [61, 62]
+		}
+
+		for char in castle:
+			interval = castleToInterval[char]
+
+			for square in interval:
+				if board.getSpace(square) != "--":
+					# print(6)
+					break
+				moves = self.getEnemyMoves(board)
+				if square in [move.endPos for move in moves]:
+					# print(7)
+					break
+			else:
+				pos = self.castlingDict[char]
+				print(pos)
+				if not position == pos[0]:
+					continue
+				availableMoves.append(Castle(self, board.getSpace(pos[1]), pos[0], pos[1]))
+
 
 		return availableMoves
 	
@@ -108,7 +141,6 @@ class King(Piece):
 					enemyMoves.append(move)
 		
 		return enemyMoves
-
 
 	def getPos(self, b):
 		for i in range(len(b.board)):

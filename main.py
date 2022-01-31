@@ -212,14 +212,15 @@ class Board:
 				self.checkForPromotion(move)
 				self.checkForEnPassant(move)
 				self.refreshChecksandPins()
+				self.fen.refreshCastling(self)
+				self.checkForCheckmate()
 
 				self.selectedIndex = -1
 				self.selectedMoves = []
 				self.futureMoves = []
 				print(self.whiteInfo)
 				print(self.blackInfo)
-				print(self.fen.getFenString(self.board))
-				self.checkForCheckmate()
+				print("\n", self.fen.getFenString(self.board), "\n")
 				return
 
 			if self.getSpace(index) == "--": # selected index is not a piece
@@ -370,13 +371,12 @@ def main():
 					print(board.whiteInfo)
 					print(board.blackInfo)
 
-					# print(board.fen.getFenString(board.board))
 					print()
 					for string in board.fen.history:
 						print(string)
 					print()
 
-					print("Current FEN String\n", board.fen.getFenString(board.board))
+					print("Current FEN String\n", board.fen.getFenString(board.board), "\n")
 		
 		render(board)
 			
