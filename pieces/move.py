@@ -29,15 +29,35 @@ class Move:
 		self.pieceMoved.timesMoved -= 1
 	
 	def redo(self):
-		self.makeMove(self)
+		self.makeMove()
 	
 	@staticmethod
 	def setBoard(b):
 		Move.b = b
 
-class Castle(Move):
-	def __init__(self, pieceMoved, pieceTaken, startPos, endPos) -> None:
-		pass
+class Castle():
+	def __init__(self, king, rook, kingPos, rookPos) -> None:
+		dirVector = (rookPos - kingPos) // abs(rookPos - kingPos)
+
+		self.kingMove = Move(king, "--", kingPos, kingPos + dirVector * 2)
+		self.rookMove = Move(rook, "--", rookPos, kingPos + dirVector)
+		self.pieceMoved = king
+		self.pieceTaken = "--"
+		self.startPos = kingPos
+		self.endPos = kingPos + dirVector * 2
+
+		print(self.kingMove, self.rookMove, self.pieceMoved, self.pieceTaken, self.startPos, self.endPos)
+	
+	def makeMove(self):
+		self.kingMove.makeMove()
+		self.rookMove.makeMove()
+	
+	def undo(self):
+		self.kingMove.undo()
+		self.rookMove.undo()
+	
+	def redo(self):
+		self.makeMove()
 
 class EnPassant(Move):
 	def __init__(self, pieceMoved, pieceTaken, startPos, endPos) -> None:
