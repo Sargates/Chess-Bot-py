@@ -52,12 +52,12 @@ class Board:
 
 
 
-		self.fen = Fen("8/4npk1/5p1p/1Q5P/1p4P1/4r3/7q/3K1R2 b - - 1 49")
+		# self.fen = Fen("8/4npk1/5p1p/1Q5P/1p4P1/4r3/7q/3K1R2 b - - 1 49")
 		
 		# self.fen = Fen("8/6k1/5p1p/4Q2P/1n4P1/8/8/3K4 w - - 1 49")
 		# self.fen = Fen("8/8/3k1nQP/8/6P1/8/8/3K4 b - - 1 49")
-		# self.fen = Fen("3rkbnr/4p1pp/p7/8/2B5/8/2PQ2PP/R1BQK1NR w KQkq - 0 15")
-		self.fen.reset()
+		self.fen = Fen("8/8/8/8/R7/1k6/1Q6/1K6 b - - 12 47")
+		# self.fen.reset()
 
 		self.board = self.fen.boardParse()
 
