@@ -43,15 +43,17 @@ class Piece:
 				i += 1
 			
 			# print(requiredSquares)
+			# print([str(move) for move in moves])
 			for i in range(len(moves)-1, -1, -1):
 				move = moves[i]
+
 				# print(move)
 				# print(move.endPos in requiredSquares)
-				if not move.endPos in requiredSquares:
+				# print((move.pieceMoved.type == "K" and move.endPos in [m.endPos for m in self.getEnemyMoves(board)]))
+				if not move.endPos in requiredSquares or (move.pieceMoved.type == "K" and move.endPos in [m.endPos for m in self.getEnemyMoves(board)]):
 					# print("\t", move)
 					moves.pop(i)
 					continue
-				# print('cum')
 		else:
 			moves = []
 	

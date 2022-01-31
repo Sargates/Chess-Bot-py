@@ -52,11 +52,11 @@ class Board:
 
 
 
-		# self.fen = Fen("8/4npk1/5p1p/1Q5P/1p4P1/4r3/7q/3K1R2 b - - 1 49")
+		self.fen = Fen("8/4npk1/5p1p/1Q5P/1p4P1/4r3/7q/3K1R2 b - - 1 49")
 		
 		# self.fen = Fen("8/6k1/5p1p/4Q2P/1n4P1/8/8/3K4 w - - 1 49")
 		# self.fen = Fen("8/8/3k1nQP/8/6P1/8/8/3K4 b - - 1 49")
-		self.fen = Fen("8/8/8/8/R7/1k6/1Q6/1K6 b - - 12 47")
+		# self.fen = Fen("1Q6/8/8/8/8/8/k1K5/8 w - - 18 50")
 		# self.fen.reset()
 
 		self.board = self.fen.boardParse()
@@ -125,6 +125,7 @@ class Board:
 		pass
 
 	def checkForCheckmate(self):
+		# print("big cum")
 		for j in range(2):
 			king = [self.whiteKing, self.blackKing][j]
 
@@ -152,11 +153,15 @@ class Board:
 				# print()
 				totalMoves.extend(moves)
 			
-			totalMoves.extend(king.getAttackingMoves(self, king.getPos(self)))
+			# print(totalMoves)
+			# totalMoves.extend(king.getAttackingMoves(self, king.getPos(self)))
+			# print(totalMoves)
 		
 			# for move in totalMoves:
-			# 	print(move)
-			# print()
+			# 	print("\t", move)
+			# print(totalMoves)
+			# print(totalMoves == [])
+			# print(totalMoves)
 			if totalMoves == []:
 				print(f"Ending FEN string: {self.fen.getFenString(self.board)}")
 				if inCheck:
@@ -180,6 +185,18 @@ class Board:
 				whitePos = i
 		
 		return (whitePos, blackPos)
+	
+	def getAllMoves(self, color):
+		moveList = []
+		for i in range(len(self.board)):
+			space = self.board[i]
+			if space == "--":
+				continue
+		
+			if space.color == color:
+				moveList.append(space.getMoves(self, i))
+		
+		return moveList
 
 	def selectionLogic(self, index :int):
 		if self.selectedIndex != -1: # index is selected

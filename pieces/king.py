@@ -17,6 +17,8 @@ class King(Piece):
 			"q": (4, 0)
 		}
 	
+	
+	
 	def getMoves(self, board, position) -> list[Move]:
 		availableMoves = []
 
@@ -80,15 +82,13 @@ class King(Piece):
 
 			for square in interval:
 				if board.getSpace(square) != "--":
-					# print(6)
 					break
 				moves = self.getEnemyMoves(board)
 				if square in [move.endPos for move in moves]:
-					# print(7)
 					break
 			else:
 				pos = self.castlingDict[char]
-				print(pos)
+				# print(pos)
 				if not position == pos[0]:
 					continue
 				availableMoves.append(Castle(self, board.getSpace(pos[1]), pos[0], pos[1]))
@@ -101,11 +101,6 @@ class King(Piece):
 
 		x, y = self.getXY(position)
 
-		# enemyMoves = self.getEnemyMoves(board)
-
-		# takenSquares = {enemyMoves[x].endPos for x in range(len(enemyMoves))}
-		# takenSquares = sorted(list(takenSquares))
-
 		for direction in self.directions:
 			for depth in self.moveDepths:
 				if not self.moveInbounds(*self.getXY(position), direction, 1):
@@ -117,19 +112,16 @@ class King(Piece):
 				endPos = position + (8*y + x)
 				space = board.getSpace(endPos)
 
-				# if endPos in takenSquares:
-				# 	continue
-
 				if space == "--":
 					availableMoves.append(Move(self, space, position, endPos))
 					continue
 				
 				if space.color != self.color:
 					availableMoves.append(Move(self, space, position, endPos))
+					continue
+
+				availableMoves.append(Move(self, space, position, endPos))
 				break
-		
-		for move in availableMoves:
-			print(move)
 
 		return availableMoves
 
