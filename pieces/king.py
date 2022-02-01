@@ -56,11 +56,11 @@ class King(Piece):
 					continue
 
 				if space == "--":
-					availableMoves.append(Move(self, space, position, endPos))
+					availableMoves.append(Move(board, self, space, position, endPos))
 					continue
 				
 				if space.color != self.color:
-					availableMoves.append(Move(self, space, position, endPos))
+					availableMoves.append(Move(board, self, space, position, endPos))
 				break
 
 		board.fen.refreshCastling(board)
@@ -91,7 +91,7 @@ class King(Piece):
 				# print(pos)
 				if not position == pos[0]:
 					continue
-				availableMoves.append(Castle(self, board.getSpace(pos[1]), pos[0], pos[1]))
+				availableMoves.append(Castle(board, self, board.getSpace(pos[1]), pos[0], pos[1]))
 
 
 		return availableMoves
@@ -113,14 +113,14 @@ class King(Piece):
 				space = board.getSpace(endPos)
 
 				if space == "--":
-					availableMoves.append(Move(self, space, position, endPos))
+					availableMoves.append(Move(board, self, space, position, endPos))
 					continue
 				
 				if space.color != self.color:
-					availableMoves.append(Move(self, space, position, endPos))
+					availableMoves.append(Move(board, self, space, position, endPos))
 					continue
 
-				availableMoves.append(Move(self, space, position, endPos))
+				availableMoves.append(Move(board, self, space, position, endPos))
 				break
 
 		return availableMoves

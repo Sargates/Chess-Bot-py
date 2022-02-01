@@ -1,9 +1,10 @@
 class Move:
-	def __init__(self, pieceMoved, pieceTaken, startPos, endPos) -> None:
+	def __init__(self, board, pieceMoved, pieceTaken, startPos, endPos) -> None:
 		self.pieceMoved = pieceMoved
 		self.pieceTaken = pieceTaken
 		self.startPos = startPos
 		self.endPos = endPos
+		self.b = board
 	
 	def __str__(self) -> str:
 		return f"{self.pieceMoved}, {self.pieceTaken}, {self.startPos}, {self.endPos}"
@@ -31,16 +32,15 @@ class Move:
 	def redo(self):
 		self.makeMove()
 	
-	@staticmethod
-	def setBoard(b):
-		Move.b = b
+	def setBoard(self, b):
+		self.b = b
 
 class Castle():
-	def __init__(self, king, rook, kingPos, rookPos) -> None:
+	def __init__(self, board, king, rook, kingPos, rookPos) -> None:
 		dirVector = (rookPos - kingPos) // abs(rookPos - kingPos)
 
-		self.kingMove = Move(king, "--", kingPos, kingPos + dirVector * 2)
-		self.rookMove = Move(rook, "--", rookPos, kingPos + dirVector)
+		self.kingMove = Move(board, king, "--", kingPos, kingPos + dirVector * 2)
+		self.rookMove = Move(board, rook, "--", rookPos, kingPos + dirVector)
 		self.pieceMoved = king
 		self.pieceTaken = "--"
 		self.startPos = kingPos
@@ -60,8 +60,8 @@ class Castle():
 		self.makeMove()
 
 class EnPassant(Move):
-	def __init__(self, pieceMoved, pieceTaken, startPos, endPos) -> None:
-		super().__init__(pieceMoved, pieceTaken, startPos, endPos)
+	def __init__(self, board, pieceMoved, pieceTaken, startPos, endPos) -> None:
+		super().__init__(board, pieceMoved, pieceTaken, startPos, endPos)
 		self.takenIndex = endPos-8 if pieceTaken.color == "w" else endPos+8
 		# print(self.takenIndex)
 		

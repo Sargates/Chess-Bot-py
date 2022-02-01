@@ -97,15 +97,15 @@ class Piece:
 				endPos = position + (8*y + x)
 				space = board.getSpace(endPos)
 				if space == "--":
-					availableMoves.append(Move(self, space, position, endPos))
+					availableMoves.append(Move(board, self, space, position, endPos))
 					continue
 				
 				if space.color != self.color:
-					availableMoves.append(Move(self, space, position, endPos))
+					availableMoves.append(Move(board, self, space, position, endPos))
 					break
 				
 				if attacking:
-					availableMoves.append(Move(self, space, position, endPos))
+					availableMoves.append(Move(board, self, space, position, endPos))
 					break
 				break
 		
