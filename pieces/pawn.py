@@ -48,7 +48,7 @@ class Pawn(Piece):
 		endPos = position + (8*y + x)
 		space = board.getSpace(endPos)
 		if not (piecePinned and self.directions[0] != pinDirection) and self.moveInbounds(*self.getXY(position), self.directions[0], 1) and space == "--":
-			availableMoves.append(Move(self, space, position, endPos))
+			availableMoves.append(Move(board, self, space, position, endPos))
 		
 		posX, posY = self.getXY(position)
 
@@ -56,7 +56,7 @@ class Pawn(Piece):
 		y = self.forward[1] * 2
 		endPos = position + (8*y + x)
 		if not (piecePinned and self.directions[0] != pinDirection) and posY == int(self.forward[1] * (-2.5) + 3.5) and board.getSpace(endPos) == "--" and board.getSpace(endPos-8 * self.forward[1]) == "--":
-			availableMoves.append(Move(self, space, position, endPos))
+			availableMoves.append(Move(board, self, space, position, endPos))
 		
 			
 
@@ -68,7 +68,7 @@ class Pawn(Piece):
 			space = board.getSpace(endPos)
 
 			if space != "--" and space.color != self.color:
-				availableMoves.append(Move(self, space, position, endPos))
+				availableMoves.append(Move(board, self, space, position, endPos))
 			
 			
 			if endPos == board.fen.getEnPassantPos():
@@ -86,7 +86,7 @@ class Pawn(Piece):
 			
 			if endPos == board.fen.getEnPassantPos():
 				space = board.getSpace(endPos - self.forward[1] * 8)
-				availableMoves.append(EnPassant(self, space, position, endPos))
+				availableMoves.append(EnPassant(board, self, space, position, endPos))
 		
 
 		# print("cum")
@@ -117,7 +117,7 @@ class Pawn(Piece):
 			endPos = position + (8*y + x)
 			space = board.getSpace(endPos)
 		
-			availableMoves.append(Move(self, space, position, endPos))
+			availableMoves.append(Move(board, self, space, position, endPos))
 		
 
 		if self.moveInbounds(*self.getXY(position), self.directions[2], 1):
@@ -126,6 +126,6 @@ class Pawn(Piece):
 			endPos = position + (8*y + x)
 			space = board.getSpace(endPos)
 			
-			availableMoves.append(Move(self, space, position, endPos))
+			availableMoves.append(Move(board, self, space, position, endPos))
 
 		return availableMoves

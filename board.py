@@ -1,6 +1,12 @@
 import pygame, os
 from pieces.move   import *
 from pieces.piece import Piece
+from pieces.king   import King
+from pieces.pawn   import Pawn
+from pieces.bishop import Bishop
+from pieces.knight import Knight
+from pieces.rook   import Rook
+from pieces.queen  import Queen
 from fen import Fen
 
 WIDTH = HEIGHT = 768
@@ -11,12 +17,7 @@ PIECE_OFFSET = (10/11) * SQ_SIZE / 2
 
 class Board:
 
-	board = ["--" for x in range(64)]
-	selectedIndex = -1
-	selectedMoves = []
-	moveHistory = []
-	futureMoves = []
-	highlightedSquares = set()
+	
 	idToIndex = {
 		'bB': 0,
 		'bK': 1,
@@ -39,6 +40,14 @@ class Board:
 				   'e': 4, 'f': 5, 'g': 6, 'h': 7}
 	colsToFiles = {v: k for k, v in filesToCols.items()}
 
+	pieceValue = {
+		  Pawn: 1, 
+		Bishop: 3, 
+		Knight: 3, 
+		  Rook: 5, 
+		 Queen: 9, 
+	}
+
 	def loadImages(self):
 		self.images = []
 
@@ -49,6 +58,14 @@ class Board:
 
 	def __init__(self) -> None:
 		self.loadImages()
+
+
+		self.board = ["--" for x in range(64)]
+		self.selectedIndex = -1
+		self.selectedMoves = []
+		self.moveHistory = []
+		self.futureMoves = []
+		self.highlightedSquares = set()
 
 
 
@@ -186,7 +203,7 @@ class Board:
 		
 		return (whitePos, blackPos)
 	
-	def getAllMoves(self, color):
+	def getAllMoves(self, color) -> list[Move]:
 		moveList = []
 		for i in range(len(self.board)):
 			space = self.board[i]
@@ -194,9 +211,27 @@ class Board:
 				continue
 		
 			if space.color == color:
-				moveList.append(space.getMoves(self, i))
+				moveList.extend(space.getMoves(self, i))
 		
 		return moveList
+	
+	def gradeBoard(self, color):
+		total = 0
+		for space in self.board:
+			if space == "--":
+				continue
+
+			if space.type == "K":
+				continue
+
+			if space.color == color:
+				total += self.pieceValue[type(space)]
+				continue
+
+			total -= self.pieceValue[type(space)]
+		
+		return total
+
 
 	def selectionLogic(self, index :int):
 		if self.selectedIndex != -1: # index is selected
@@ -207,7 +242,7 @@ class Board:
 				self.selectedMoves = []
 				return
 
-			tempMove = Move(space, self.getSpace(index), self.selectedIndex, index)
+			tempMove = Move(self, space, self.getSpace(index), self.selectedIndex, index)
 			
 			if tempMove in self.selectedMoves: # if index in in avialable moves
 				move = self.selectedMoves[self.selectedMoves.index(tempMove)]

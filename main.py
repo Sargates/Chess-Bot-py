@@ -2,6 +2,7 @@ import pygame
 
 from board import Board
 from pieces.move import Move
+from ai import AI
 
 WIDTH = HEIGHT = 768
 WINDOWSIZE = (WIDTH, HEIGHT)
@@ -9,6 +10,10 @@ SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
 SQ_SIZE = ((256 - 80)/8) * (WIDTH/256)
 OFFSET = 40 * (WIDTH/256)
 PIECE_OFFSET = (10/11) * SQ_SIZE / 2
+
+
+board = Board()
+ai = AI(board)
 
 pygame.init()
 
@@ -81,8 +86,6 @@ def render(board : Board):
 
 def main():
 
-	board = Board()
-	Move.setBoard(board)
 
 	run = True
 	while run:
@@ -98,6 +101,8 @@ def main():
 					if e.button == 1:
 						board.highlightedSquares = set()
 						board.selectionLogic(index)
+
+						ai.search(1)
 				if e.button == 3:
 					if not index in board.highlightedSquares:
 						board.highlightedSquares.add(index)
@@ -124,6 +129,7 @@ def main():
 				elif e.key == pygame.K_v:
 					print(board.whiteInfo)
 					print(board.blackInfo)
+					ai.print()
 
 					print()
 					for string in board.fen.history:
