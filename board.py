@@ -48,6 +48,8 @@ class Board:
 		 Queen: 9, 
 	}
 
+	checkMate = False
+
 	def loadImages(self):
 		self.images = []
 
@@ -69,7 +71,7 @@ class Board:
 
 
 
-		self.fen = Fen("8/4npk1/5p1p/1Q5P/1p4P1/4r3/7q/3K1R2 b - - 1 49")
+		self.fen = Fen("8/4npk1/5p1p/1Q5P/1p4P1/4r3/7q/3K1R2 w - - 1 49")
 		
 		# self.fen = Fen("8/6k1/5p1p/4Q2P/1n4P1/8/8/3K4 w - - 1 49")
 		# self.fen = Fen("8/8/3k1nQP/8/6P1/8/8/3K4 b - - 1 49")
@@ -126,8 +128,12 @@ class Board:
 	
 	def checkForPromotion(self, move :Move):
 		if move.pieceMoved.type == "p":
+			print(move, self.getSpace(move.endPos))
 			if move.endPos // 8 in [0, 7]:
+				print("promoting")
 				self.fen.promotePawn(self.board, move.endPos)
+				print("Promoted")
+				print(move, self.getSpace(move.endPos))
 		pass
 
 	def checkForEnPassant(self, move :Move):
@@ -183,6 +189,7 @@ class Board:
 				print(f"Ending FEN string: {self.fen.getFenString(self.board)}")
 				if inCheck:
 					print("Checkmate!")
+					self.checkMate = True
 					return
 
 				print("Draw!")
@@ -203,20 +210,30 @@ class Board:
 		
 		return (whitePos, blackPos)
 	
-	def getAllMoves(self, color) -> list[Move]:
+	def getAllMoves(self) -> list[Move]:
+		# color 0 = Black, 1 = White
 		moveList = []
+		color = self.fen.colorToMove
 		for i in range(len(self.board)):
 			space = self.board[i]
 			if space == "--":
 				continue
 		
-			if space.color == color:
-				moveList.extend(space.getMoves(self, i))
+			if space.color != color:
+				continue
+
+			allMoves = space.getMoves(self, i)
+
+			space.removeInvalidMoves(self.board, allMoves, self.infoDict[color])
+
+			moveList.extend(allMoves)
 		
+		self.kingDict[color]
 		return moveList
 	
-	def gradeBoard(self, color):
+	def evalBoard(self):
 		total = 0
+		perspective = -1 if self.fen.colorToMove == "b" else 1
 		for space in self.board:
 			if space == "--":
 				continue
@@ -224,13 +241,41 @@ class Board:
 			if space.type == "K":
 				continue
 
-			if space.color == color:
-				total += self.pieceValue[type(space)]
+			if space.color == "b":
+				total -= self.pieceValue[type(space)]
 				continue
 
-			total -= self.pieceValue[type(space)]
+			total += self.pieceValue[type(space)]
+
+		return total * perspective
+	
+	def makeMoveOnBoard(self, move :Move):
+		self.moveHistory.append(move)
+		if move.pieceMoved.type == "p":
+			self.fen.halfMoveCount = 0
+		else:
+			self.fen.halfMoveCount += 1
 		
-		return total
+		self.futureMoves = []
+
+		self.fen.switchTurns(self.board)
+		move.makeMove()
+		self.checkForPromotion(move)
+		self.checkForEnPassant(move)
+		self.refreshChecksandPins()
+		self.fen.refreshCastling(self)
+		self.checkForCheckmate()
+	
+	def unmakeMoveOnBoard(self):
+		move = self.moveHistory.pop(-1)
+		self.futureMoves.append(move)
+		self.fen.undo()
+		move.undo()
+		self.checkForPromotion(move)
+		self.checkForEnPassant(move)
+		self.refreshChecksandPins()
+		self.fen.refreshCastling(self)
+		self.checkForCheckmate()
 
 
 	def selectionLogic(self, index :int):
@@ -246,26 +291,13 @@ class Board:
 			
 			if tempMove in self.selectedMoves: # if index in in avialable moves
 				move = self.selectedMoves[self.selectedMoves.index(tempMove)]
-				self.moveHistory.append(move)
-				if space.type == "p":
-					self.fen.halfMoveCount = 0
-				else:
-					self.fen.halfMoveCount += 1
-
-				self.fen.switchTurns(self.board)
-				move.makeMove()
-				self.checkForPromotion(move)
-				self.checkForEnPassant(move)
-				self.refreshChecksandPins()
-				self.fen.refreshCastling(self)
-				self.checkForCheckmate()
+				self.makeMoveOnBoard(move)
 
 				self.selectedIndex = -1
 				self.selectedMoves = []
-				self.futureMoves = []
 				print(self.whiteInfo)
 				print(self.blackInfo)
-				print("\n", self.fen.getFenString(self.board), "\n")
+				print(f"\n{self.fen.getFenString(self.board)}")
 				return
 
 			if self.getSpace(index) == "--": # selected index is not a piece

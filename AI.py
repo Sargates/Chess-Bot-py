@@ -1,27 +1,33 @@
+from re import search
 from board import Board
 from pieces.move import Move
 import random
 
 class AI:
-	def __init__(self, board :Board) -> None:
-		self.board = Board()
+	def __init__(self) -> None:
+		self.eval = None
+		pass
 
-		self.board.__dict__ == board.__dict__
-
-	def print(self):
-		string = ""
-		for i in range(8):
-			for j in range(8):
-				string += str(self.board.board[i * 8 + j]) + " "
-			string += "\n"
-		
-		print(string)
+	def getMove(self, board :Board):
+		return self.search(1, board)
 	
-	def search(self, depth):
-		allMoves = self.board.getAllMoves("b")
+	def search(self, depth, board :Board):
+		allMoves = board.getAllMoves()
+		if depth == 0:
+			return allMoves[0]
 
-		index = random.randint(0, len(allMoves)-1)
-		selectedMove = allMoves[index]
+		for move in allMoves:
+			board.makeMoveOnBoard(move)
 
-		selectedMove.makeMove()
-		
+			tempMove = search(depth-1, board)
+			if evaluation > board.evalBoard():
+				pass
+
+			board.unmakeMoveOnBoard(move)
+
+		# selectedMove = allMoves[]
+
+		return selectedMove
+	
+	def evalBoard(self, board :Board):
+		return board.evalBoard()

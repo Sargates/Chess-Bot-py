@@ -13,7 +13,7 @@ PIECE_OFFSET = (10/11) * SQ_SIZE / 2
 
 
 board = Board()
-ai = AI(board)
+ai = AI()
 
 pygame.init()
 
@@ -101,8 +101,6 @@ def main():
 					if e.button == 1:
 						board.highlightedSquares = set()
 						board.selectionLogic(index)
-
-						ai.search(1)
 				if e.button == 3:
 					if not index in board.highlightedSquares:
 						board.highlightedSquares.add(index)
@@ -113,18 +111,14 @@ def main():
 						
 			if e.type == pygame.KEYDOWN:
 				if e.key == pygame.K_z and len(board.moveHistory) > 0:
-					move = board.moveHistory.pop(-1)
-					move.undo()
-					board.futureMoves.append(move)
+					board.unmakeMoveOnBoard()
+					board.unmakeMoveOnBoard()
 
-					board.fen.undo()
 					board.fen.refreshBoard(board.board)
 				elif e.key == pygame.K_y and len(board.futureMoves) > 0:
-					move = board.futureMoves.pop(-1)
-					move.redo()
-					board.moveHistory.append(move)
+					board.makeMoveOnBoard(board.moveHistory.pop(-1))
+					board.makeMoveOnBoard(board.moveHistory.pop(-1))
 
-					board.fen.redo()
 					board.fen.refreshBoard(board.board)
 				elif e.key == pygame.K_v:
 					print(board.whiteInfo)
@@ -137,7 +131,9 @@ def main():
 					print()
 
 					print("Current FEN String\n", board.fen.getFenString(board.board), "\n")
-		
+		if board.fen.colorToMove == "b":
+			aiMove = ai.getMove(board)
+			board.makeMoveOnBoard(aiMove)
 		render(board)
 			
 
