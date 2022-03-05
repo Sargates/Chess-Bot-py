@@ -2,7 +2,7 @@ import pygame
 
 from board import Board
 from pieces.move import Move
-from ai import AI
+from AI import AI
 
 WIDTH = HEIGHT = 768
 WINDOWSIZE = (WIDTH, HEIGHT)
