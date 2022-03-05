@@ -88,6 +88,7 @@ def main():
 
 
 	run = True
+	checkmatePrinting = False
 	while run:
 		mousePos = pygame.mouse.get_pos()
 
@@ -123,17 +124,24 @@ def main():
 				elif e.key == pygame.K_v:
 					print(board.whiteInfo)
 					print(board.blackInfo)
-					ai.print()
+					print(len(board.getAllMoves()))
+					print(ai.totalMoves)
 
 					print()
 					for string in board.fen.history:
 						print(string)
 					print()
 
-					print("Current FEN String\n", board.fen.getFenString(board.board), "\n")
+					print("Current FEN String\n", board.fen.getFenString(board.board))
 		if board.fen.colorToMove == "b":
 			aiMove = ai.getMove(board)
 			board.makeMoveOnBoard(aiMove)
+		
+		if (board.checkMate or board.matchDraw) and not checkmatePrinting:
+			print("Game Over")
+			print("Ending FEN String\n", board.fen.getFenString(board.board))
+			checkmatePrinting = True
+
 		render(board)
 			
 

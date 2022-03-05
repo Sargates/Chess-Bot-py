@@ -52,10 +52,6 @@ class Fen:
 		self.refresh()
 
 	def refreshCastling(self, board):
-		bQ = [2, 3]
-		bK = [5, 6]
-		wQ = [58 ,59]
-		wK = [61, 62]
 		castle = ""
 		for pos in board.updateKingPos():
 			king = board.getSpace(pos)
@@ -72,7 +68,6 @@ class Fen:
 			inCheck, pins, checks = king.getChecksandPins(board, pos)
 
 			if inCheck:
-				# print(3)
 				continue
 
 			if kRook != "--" and kRook.timesMoved == 0:
@@ -187,7 +182,7 @@ class Fen:
 	def switchTurns(self, board):
 		self.future = []
 		string = self.getFenString(board)
-		print(string)
+		# print(string)
 		self.history.append(string)
 		if self.colorToMove == "w":
 			self.colorToMove = "b"

@@ -5,29 +5,45 @@ import random
 
 class AI:
 	def __init__(self) -> None:
-		self.eval = None
+		self.totalMoves = 0
 		pass
 
-	def getMove(self, board :Board):
-		return self.search(1, board)
-	
-	def search(self, depth, board :Board):
+	def getMove(self, board :Board) -> Move:
+		self.totalMoves = 0
 		allMoves = board.getAllMoves()
+
+		bestMove = None
+		bestEval = -(2**31)
+		for move in allMoves:
+			board.makeMoveOnBoard(move, True)
+
+			iterEval = -self.search(1, board)
+			if bestEval < iterEval:
+				bestEval = iterEval
+				bestMove = move
+
+			board.unmakeMoveOnBoard()
+		
+		return bestMove
+	
+	def search(self, depth, board :Board) -> int:
+		allMoves = board.getAllMoves()
+
 		if depth == 0:
-			return allMoves[0]
+			self.totalMoves += len(allMoves)
+			return board.evalBoard()
+
+		eval = -(2**31)
 
 		for move in allMoves:
-			board.makeMoveOnBoard(move)
+			board.makeMoveOnBoard(move, True)
 
-			tempMove = search(depth-1, board)
-			if evaluation > board.evalBoard():
-				pass
+			eval = max(eval, -self.search(depth-1, board))
 
-			board.unmakeMoveOnBoard(move)
+			board.unmakeMoveOnBoard()
 
-		# selectedMove = allMoves[]
 
-		return selectedMove
+		return eval
 	
 	def evalBoard(self, board :Board):
 		return board.evalBoard()
