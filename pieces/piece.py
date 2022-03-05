@@ -19,9 +19,6 @@ class Piece:
 	
 	def removeInvalidMoves(self, board, moves :list[Move], kingInfo):
 		inCheck, pins, checks, kingPos = kingInfo
-
-		if inCheck ^ bool(len(checks)):
-			print("inCheck and len(checks) desync")
 		if not inCheck:
 			return
 

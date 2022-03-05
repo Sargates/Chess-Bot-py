@@ -49,6 +49,7 @@ class Board:
 	}
 
 	checkMate = False
+	matchDraw = False
 
 	def loadImages(self):
 		self.images = []
@@ -128,7 +129,7 @@ class Board:
 	
 	def checkForPromotion(self, move :Move):
 		if move.pieceMoved.type == "p":
-			print(move, self.getSpace(move.endPos))
+			# print(move, self.getSpace(move.endPos))
 			if move.endPos // 8 in [0, 7]:
 				print("promoting")
 				self.fen.promotePawn(self.board, move.endPos)
@@ -147,7 +148,7 @@ class Board:
 		
 		pass
 
-	def checkForCheckmate(self):
+	def checkForCheckmate(self, quiet=False):
 		# print("big cum")
 		for j in range(2):
 			king = [self.whiteKing, self.blackKing][j]
@@ -165,34 +166,16 @@ class Board:
 			totalMoves = []
 			for piece in team:
 				moves = piece[0].getAttackingMoves(self, piece[1])
-				# if piece[0].type == "K":
-				# 	print(moves)
 
 				king.removeInvalidMoves(self, moves, king.getChecksandPins(self, king.getPos(self)) + (king.getPos(self),))
-				
-				# print(piece[0].type)
-				# for move in moves:
-				# 	print("\t", move)
-				# print()
+	
 				totalMoves.extend(moves)
-			
-			# print(totalMoves)
-			# totalMoves.extend(king.getAttackingMoves(self, king.getPos(self)))
-			# print(totalMoves)
-		
-			# for move in totalMoves:
-			# 	print("\t", move)
-			# print(totalMoves)
-			# print(totalMoves == [])
-			# print(totalMoves)
-			if totalMoves == []:
-				print(f"Ending FEN string: {self.fen.getFenString(self.board)}")
+			if totalMoves == [] and not quiet:
 				if inCheck:
-					print("Checkmate!")
 					self.checkMate = True
 					return
 
-				print("Draw!")
+				self.matchDraw = True
 
 	def updateKingPos(self):
 		for i in range(len(self.board)):
@@ -249,12 +232,13 @@ class Board:
 
 		return total * perspective
 	
-	def makeMoveOnBoard(self, move :Move):
+	def makeMoveOnBoard(self, move :Move, quiet=False):
 		self.moveHistory.append(move)
-		if move.pieceMoved.type == "p":
-			self.fen.halfMoveCount = 0
-		else:
-			self.fen.halfMoveCount += 1
+		if not quiet:
+			if move.pieceMoved.type == "p":
+				self.fen.halfMoveCount = 0
+			else:
+				self.fen.halfMoveCount += 1
 		
 		self.futureMoves = []
 
@@ -264,7 +248,7 @@ class Board:
 		self.checkForEnPassant(move)
 		self.refreshChecksandPins()
 		self.fen.refreshCastling(self)
-		self.checkForCheckmate()
+		self.checkForCheckmate(quiet)
 	
 	def unmakeMoveOnBoard(self):
 		move = self.moveHistory.pop(-1)
@@ -295,9 +279,11 @@ class Board:
 
 				self.selectedIndex = -1
 				self.selectedMoves = []
-				print(self.whiteInfo)
-				print(self.blackInfo)
-				print(f"\n{self.fen.getFenString(self.board)}")
+				"""
+				# print(self.whiteInfo)
+				# print(self.blackInfo)
+				# print(f"\n{self.fen.getFenString(self.board)}")
+				"""
 				return
 
 			if self.getSpace(index) == "--": # selected index is not a piece
@@ -314,7 +300,7 @@ class Board:
 				self.selectedMoves = []
 
 			# for move in self.selectedMoves:
-			# 	print(move)
+				# print(move)
 
 
 			return
