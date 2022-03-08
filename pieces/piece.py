@@ -116,18 +116,3 @@ class Piece:
 	def getAttackingMoves(self, board, position) -> list[Move]:
 		return self.getMoves(board, position, True)
 
-	def moveInbounds(self, x, y, direction, depth):
-		temp = direction[0] * depth
-		newX = x + temp
-		newY = y + direction[1] * depth
-
-		if not (0 <= newX < 8):
-			return False
-
-		if not (0 <= newY < 8):
-			return False
-		
-		
-		
-		return True
-
