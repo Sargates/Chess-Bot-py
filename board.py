@@ -39,6 +39,8 @@ class Board:
 	filesToCols = {'a': 0, 'b': 1, 'c': 2, 'd': 3,
 				   'e': 4, 'f': 5, 'g': 6, 'h': 7}
 	colsToFiles = {v: k for k, v in filesToCols.items()}
+	highlightedSquares = {}
+	selectedIndex = -1
 
 	checkMate = False
 	matchDraw = False
@@ -82,6 +84,65 @@ class Board:
 					blackPos = (col, row)
 		
 		return (whitePos, blackPos)
+
+	def getPawnMoves(self, x, y):
+		pass
+	def getKnightMoves(self, i, j):
+		directions = [(-2, 1), (-1, 2), (1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1)]
+		moveDepths = [1]
+
+		# inCheck, pins, checks, kingPos = king.getChecksandPins(board, king.getPos(board)) + (king.getPos(board),)
+		piecePinned = False
+		availableMoves = []
+
+		# for x in range(len(pins)-1, -1, -1):
+		# 	# print(pins[x])
+		# 	# print(i, j)
+		# 	if pins[x][0] == i and pins[x][1] == j:
+		# 		piecePinned = True
+		# 		pinDirection = (pins[x][2], pins[x][3])
+		# 		# print("pin found")
+		# 		# print(pins[x])
+		# 		# pins.remove(pins[x])
+		# 		pins.pop(x)
+		# 		break
+
+
+		# print(f"piecePinned = {piecePinned}")
+		for direction in directions:
+			# print(f"direction == pinDirection = {direction == pinDirection}")
+			# if piecePinned and direction != pinDirection:
+			# 	continue
+
+			for depth in moveDepths:
+				if not (0 <= i + direction[0] * depth < 8 and 0 <= j + direction[1] * depth < 8):
+					break
+
+				endX = direction[0] * depth
+				endY = direction[1] * depth
+
+				endPos = (i + endX, j + endY)
+				space = self.getSpace(endPos)
+				if space == "--":
+					availableMoves.append(Move(self, (i, j), endPos))
+					continue
+				
+				if space.color != self.color:
+					availableMoves.append(Move(self, (i, j), endPos))
+					break
+				
+				# if attacking:
+				# 	availableMoves.append(Move(self, (i, j), endPos))
+				# 	break
+				break
+	def getBishopMoves(self, x, y):
+		pass
+	def getRookMoves(self, x, y):
+		pass
+	def getQueenMoves(self, x, y):
+		pass
+	def getKingMoves(self, x, y):
+		pass
 
 	def getAllMoves(self, ):
 		pass

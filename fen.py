@@ -119,14 +119,14 @@ class Fen:
 
 	def boardParse(self):
 		ranks = self.board.split("/")
-		board = ["--" for x in range(64)]
+		board = [["--" for x in range(8)] for k in range(8)]
 		i=0
 		for y in range(len(ranks)):
 			for symbol in ranks[y]:
 				if symbol.isdigit():
 					i += int(symbol)
 					continue
-				board[i] = self.pieceDict[symbol]
+				board[i//8][i%8] = self.pieceDict[symbol]
 				i += 1
 		
 		return board

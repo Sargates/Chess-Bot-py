@@ -23,13 +23,13 @@ def getPosToIndex(x, y):
 	newY = (y - 40 * (WIDTH/256)) // (22 * (WIDTH/256))
 	
 	if (0 <= newX < 8 and 0 <= newY < 8):
-		return int(newY * 8 + newX)
+		return (newX, newY)
 	
 	return -1
 
-def getIndexToPos(index):
-	x = (index % 8)  * 22 * WIDTH/256 + 40 *(WIDTH/256)
-	y = (index // 8) * 22 * WIDTH/256 + 40 *(WIDTH/256)
+def getIndexToPos(x1, y1):
+	x = (x1 % 8)  * 22 * WIDTH/256 + 40 *(WIDTH/256)
+	y = (y1 // 8) * 22 * WIDTH/256 + 40 *(WIDTH/256)
 	
 	x += SQ_SIZE/2
 	y += SQ_SIZE/2
@@ -41,11 +41,13 @@ def renderBoard(b :Board):
 
 def renderPieces(b :Board):
 	for i in range(len(b.board)):
-		space = b.board[i]
-		if space != "--":
-			xPosition = (i % 8)
-			yPosition = (i // 8)
-			SCREEN.blit((b.images[b.idToIndex[space.ID]]), (OFFSET + (xPosition*SQ_SIZE)+SQ_SIZE/2 - PIECE_OFFSET, OFFSET + (yPosition*SQ_SIZE)+SQ_SIZE/2 - PIECE_OFFSET))
+		for j in range(len(b.board[i])):
+			space = b.board[i][j]
+			# print(j, i, "", space)
+			if space != "--":
+				xPosition = j
+				yPosition = i
+				SCREEN.blit((b.images[b.idToIndex[space]]), (OFFSET + (xPosition*SQ_SIZE)+SQ_SIZE/2 - PIECE_OFFSET, OFFSET + (yPosition*SQ_SIZE)+SQ_SIZE/2 - PIECE_OFFSET))
 
 def renderHighlighted(b :Board):
 	highlightedScreen = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
@@ -59,7 +61,7 @@ def renderHighlighted(b :Board):
 
 def renderMoves(b :Board):
 	if b.selectedIndex != -1:
-		piece = b.getSpace(b.selectedIndex)
+		piece = b.getSpace(*b.selectedIndex)
 		if piece == "--":
 			b.selectedIndex = -1
 			return
@@ -150,9 +152,9 @@ def main():
 			checkmatePrinting = True
 			continue
 
-		if board.fen.colorToMove == "b" and not (board.checkMate or board.matchDraw):
-			aiMove = ai.getMove(board)
-			board.makeMoveOnBoard(aiMove)
+		# if board.fen.colorToMove == "b" and not (board.checkMate or board.matchDraw):
+		# 	aiMove = ai.getMove(board)
+		# 	board.makeMoveOnBoard(aiMove)
 
 		render(board)
 			
