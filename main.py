@@ -2,7 +2,7 @@ import pygame
 
 from board import Board
 from pieces.move import Move
-from ai import AI
+from AI import AI
 
 WIDTH = HEIGHT = 768
 WINDOWSIZE = (WIDTH, HEIGHT)
@@ -89,6 +89,14 @@ def main():
 
 	run = True
 	checkmatePrinting = False
+
+	# ai.getTotalMoves(4, board)
+	# print()
+
+	# l = ai.depthList
+	# for i in range(len(l), 0, -1):
+	# 	print(l[i])
+
 	while run:
 		mousePos = pygame.mouse.get_pos()
 
@@ -99,16 +107,16 @@ def main():
 			if e.type == pygame.MOUSEBUTTONDOWN:
 				index = getPosToIndex(*mousePos)
 				if (index != -1):
-					if e.button == 1:
+					if e.button == 1: # left click
 						board.highlightedSquares = set()
 						board.selectionLogic(index)
-				if e.button == 3:
-					if not index in board.highlightedSquares:
-						board.highlightedSquares.add(index)
-						print(f"  Highlighted Index {index}")
-					else:
-						board.highlightedSquares.remove(index)
-						print(f"Unhighlighted Index {index}")
+					if e.button == 3: # right click
+						if not index in board.highlightedSquares:
+							board.highlightedSquares.add(index)
+							print(f"  Highlighted Index {index}")
+						else:
+							board.highlightedSquares.remove(index)
+							print(f"Unhighlighted Index {index}")
 						
 			if e.type == pygame.KEYDOWN:
 				if e.key == pygame.K_z and len(board.moveHistory) > 0:
@@ -133,14 +141,18 @@ def main():
 					print()
 
 					print("Current FEN String\n", board.fen.getFenString(board.board))
-		if board.fen.colorToMove == "b":
-			aiMove = ai.getMove(board)
-			board.makeMoveOnBoard(aiMove)
 		
 		if (board.checkMate or board.matchDraw) and not checkmatePrinting:
 			print("Game Over")
 			print("Ending FEN String\n", board.fen.getFenString(board.board))
+			print(f"checkMate = {board.checkMate}")
+			print(f"matchDraw = {board.matchDraw}")
 			checkmatePrinting = True
+			continue
+
+		if board.fen.colorToMove == "b" and not (board.checkMate or board.matchDraw):
+			aiMove = ai.getMove(board)
+			board.makeMoveOnBoard(aiMove)
 
 		render(board)
 			

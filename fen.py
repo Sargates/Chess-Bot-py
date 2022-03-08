@@ -13,7 +13,21 @@ class Fen:
 	filesToCols = {'a': 0, 'b': 1, 'c': 2, 'd': 3,
 				   'e': 4, 'f': 5, 'g': 6, 'h': 7}
 	colsToFiles = {v: k for k, v in filesToCols.items()}
-	
+
+	pieceDict = {
+		"r": "bR",
+		"n": "bN",
+		"b": "bB",
+		"q": "bQ",
+		"k": "bK",
+		"p": "bp",
+		"R": "wR",
+		"N": "wN",
+		"B": "wB",
+		"Q": "wQ",
+		"K": "wK",
+		"P": "wp",
+	}
 
 	def __init__(self, string :str) -> None:
 		board, colorToMove, castling, enPassant, halfMoveCount, fullMoveCount = string.split(" ")
@@ -97,38 +111,11 @@ class Fen:
 		self.enPassant = self.colsToFiles[index%8] + self.rowsToRanks[index // 8]
 	
 	def promotePawn(self, b, position):
-		b[position] = Queen(b[position].color)
+		b[position] = b[position][0]+"Q"
 	
 	def reset(self):
 		string = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 		self.__init__(string)
-
-	def smartPieceDict(self, string):
-	
-		if string == "r":
-			return   Rook("b")
-		if string == "n":
-			return Knight("b")
-		if string == "b":
-			return Bishop("b")
-		if string == "q":
-			return  Queen("b")
-		if string == "k":
-			return   King("b")
-		if string == "p":
-			return   Pawn("b")
-		if string == "P":
-			return   Pawn("w")
-		if string == "R":
-			return   Rook("w")
-		if string == "N":
-			return Knight("w")
-		if string == "B":
-			return Bishop("w")
-		if string == "Q":
-			return  Queen("w")
-		if string == "K":
-			return   King("w")  
 
 	def boardParse(self):
 		ranks = self.board.split("/")
@@ -139,7 +126,7 @@ class Fen:
 				if symbol.isdigit():
 					i += int(symbol)
 					continue
-				board[i] = self.smartPieceDict(symbol)
+				board[i] = self.pieceDict[symbol]
 				i += 1
 		
 		return board
