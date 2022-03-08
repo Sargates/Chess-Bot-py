@@ -73,7 +73,7 @@ class Pawn(Piece):
 			
 			if endPos == board.fen.getEnPassantPos():
 				space = board.getSpace(endPos - self.forward[1] * 8)
-				availableMoves.append(EnPassant(self, space, position, endPos))
+				availableMoves.append(EnPassant(board, self, space, position, endPos))
 
 		if not (piecePinned and self.directions[2] != pinDirection) and self.moveInbounds(*self.getXY(position), self.directions[2], 1):
 			x = self.directions[2][0]
@@ -82,7 +82,7 @@ class Pawn(Piece):
 			space = board.getSpace(endPos)
 
 			if space != "--" and space.color != self.color:
-				availableMoves.append(Move(self, space, position, endPos))
+				availableMoves.append(Move(board, self, space, position, endPos))
 			
 			if endPos == board.fen.getEnPassantPos():
 				space = board.getSpace(endPos - self.forward[1] * 8)

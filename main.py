@@ -13,7 +13,7 @@ PIECE_OFFSET = (10/11) * SQ_SIZE / 2
 
 
 board = Board()
-ai = AI(board)
+ai = AI()
 
 pygame.init()
 
@@ -88,6 +88,15 @@ def main():
 
 
 	run = True
+	checkmatePrinting = False
+
+	# ai.getTotalMoves(4, board)
+	# print()
+
+	# l = ai.depthList
+	# for i in range(len(l), 0, -1):
+	# 	print(l[i])
+
 	while run:
 		mousePos = pygame.mouse.get_pos()
 
@@ -98,46 +107,53 @@ def main():
 			if e.type == pygame.MOUSEBUTTONDOWN:
 				index = getPosToIndex(*mousePos)
 				if (index != -1):
-					if e.button == 1:
+					if e.button == 1: # left click
 						board.highlightedSquares = set()
 						board.selectionLogic(index)
-
-						ai.search(1)
-				if e.button == 3:
-					if not index in board.highlightedSquares:
-						board.highlightedSquares.add(index)
-						print(f"  Highlighted Index {index}")
-					else:
-						board.highlightedSquares.remove(index)
-						print(f"Unhighlighted Index {index}")
+					if e.button == 3: # right click
+						if not index in board.highlightedSquares:
+							board.highlightedSquares.add(index)
+							print(f"  Highlighted Index {index}")
+						else:
+							board.highlightedSquares.remove(index)
+							print(f"Unhighlighted Index {index}")
 						
 			if e.type == pygame.KEYDOWN:
 				if e.key == pygame.K_z and len(board.moveHistory) > 0:
-					move = board.moveHistory.pop(-1)
-					move.undo()
-					board.futureMoves.append(move)
+					board.unmakeMoveOnBoard()
+					board.unmakeMoveOnBoard()
 
-					board.fen.undo()
 					board.fen.refreshBoard(board.board)
 				elif e.key == pygame.K_y and len(board.futureMoves) > 0:
-					move = board.futureMoves.pop(-1)
-					move.redo()
-					board.moveHistory.append(move)
+					board.makeMoveOnBoard(board.moveHistory.pop(-1))
+					board.makeMoveOnBoard(board.moveHistory.pop(-1))
 
-					board.fen.redo()
 					board.fen.refreshBoard(board.board)
 				elif e.key == pygame.K_v:
 					print(board.whiteInfo)
 					print(board.blackInfo)
-					ai.print()
+					print(len(board.getAllMoves()))
+					print(ai.totalMoves)
 
 					print()
 					for string in board.fen.history:
 						print(string)
 					print()
 
-					print("Current FEN String\n", board.fen.getFenString(board.board), "\n")
+					print("Current FEN String\n", board.fen.getFenString(board.board))
 		
+		if (board.checkMate or board.matchDraw) and not checkmatePrinting:
+			print("Game Over")
+			print("Ending FEN String\n", board.fen.getFenString(board.board))
+			print(f"checkMate = {board.checkMate}")
+			print(f"matchDraw = {board.matchDraw}")
+			checkmatePrinting = True
+			continue
+
+		if board.fen.colorToMove == "b" and not (board.checkMate or board.matchDraw):
+			aiMove = ai.getMove(board)
+			board.makeMoveOnBoard(aiMove)
+
 		render(board)
 			
 

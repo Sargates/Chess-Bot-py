@@ -46,7 +46,7 @@ class Castle():
 		self.startPos = kingPos
 		self.endPos = kingPos + dirVector * 2
 
-		print(self.kingMove, self.rookMove, self.pieceMoved, self.pieceTaken, self.startPos, self.endPos)
+		# print(self.kingMove, self.rookMove, self.pieceMoved, self.pieceTaken, self.startPos, self.endPos)
 	
 	def makeMove(self):
 		self.kingMove.makeMove()
