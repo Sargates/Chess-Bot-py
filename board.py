@@ -173,6 +173,75 @@ class Board:
 
 		return self.getPieceMoves(x, y, directions, moveDepths)
 
+	def isSquareCovered(self, x1, y1):
+		pieceInQuestion = self.getSpace(x1, x1)
+		pins = []
+		checks = []
+		inCheck = False
+
+		directions = ((0, -1), (1, 0), (0, 1), (-1, 0), (1, 1), (-1, 1), (-1, -1), (1, -1))
+
+		for j in range(len(directions)):
+			dir = directions[j]
+			possiblePin = ()
+			for i in range(1, 8):
+				testedPos = (x1 + dir[0]*i, y1 + dir[1]*i)
+				if not (0 <= testedPos[0] < 8 and 0 <= testedPos[1] < 8):
+					break
+
+				endSpace = self.getSpace(*testedPos)
+
+				if endSpace == "--":
+					continue
+
+				if endSpace[0] == pieceInQuestion[0] and endSpace.type != 'K':
+					if possiblePin == ():
+						possiblePin = (endSpace[0], endSpace[1], dir[0], dir[1])
+						# print("Possible Pin")
+						# print(possiblePin)
+					else:
+						break
+				elif endSpace.color != self.color:
+					type = endSpace.type
+					# 5 possibilities here in this complex conditional
+					# 1. orthoganally away from king and piece is rook
+					# 2. diagonally away from king and piece is bishop
+					# 3. 1 square away diagonally from king and piece is a pawn
+					# 4. any direction and piece is a queen
+					# 5. anydirection 1 square away and piece is a king( this is necessary to prevent a king move to a square controlled by another king)
+					if (0 <= j <= 3 and type == 'R') or \
+							(4 <= j <= 7 and type == 'B') or \
+							(i == 1 and type == 'p' and ((self.color == 'w' and 6 <= j <= 7) or \
+							(self.color != 'b' and 4 <= j <= 5))) or \
+							(type == 'Q') or (i == 1 and type == 'K'):
+						if possiblePin == (): # no piece blocking, so check the king
+							inCheck = True
+							checks.append((endSpace[0], endSpace[1], dir[0], dir[1]))
+							break
+						else: # pinned piece blocking check
+							pins.append(possiblePin)
+							break
+					else:
+						break
+
+		knightMoves = ((-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2,-1), (2, 1))
+		for m in knightMoves:
+			testedPos = (x1 + dir[0]*i, y1 + dir[1]*i)
+			if not (0 <= testedPos[0] < 8 and 0 <= testedPos[1] < 8):
+				break
+
+
+			endPiece = self.getSpace(*testedPos)
+			if endPiece == "--":
+				continue
+			if endPiece[1] != pieceInQuestion[0] and endPiece[1] == "N":
+				inCheck = True
+				checks.append((endSpace[0], endSpace[1], m[0], m[1]))
+					
+		# print("End of pin check")
+
+		return (inCheck, pins, checks)
+
 	def getKingMoves(self, i, j):
 		moveDepths = [1]
 		directions = [(-1, 0), (0, 1), (1, 0), (0, -1), (-1, -1), (1, -1), (-1, 1), (1, 1)]
@@ -214,10 +283,17 @@ class Board:
 		
 		castleToInterval = {
 			# change to support 2D indexing of b.board
-			"q": [2, 3],
-			"k": [5, 6],
-			"Q": [58 ,59],
-			"K": [61, 62]
+			"q": [(1,0), (2,0)],
+			"k": [(4,0), (5,0)],
+			"Q": [(1,7) ,(2,7)],
+			"K": [(4,7), (5,7)]
+		}
+
+		castlingDict = {
+			"K": ((4,7), (7,7)),
+			"Q": ((3,7), (0,7)),
+			"k": ((4,0), (7,0)),
+			"q": ((3,0), (0,0))
 		}
 
 		if castle == "-":
@@ -227,15 +303,13 @@ class Board:
 			interval = castleToInterval[char]
 
 			for square in interval:
-				if self.getSpace(square) != "--":
+				if self.getSpace(*square) != "--":
 					break
-				moves = self.getEnemyMoves(self)
-				if square in [move.endPos for move in moves]:
+				if not self.isSquareCovered(*square):
 					break
 			else:
-				pos = self.castlingDict[char]
-				# print(pos)
-				if not position == pos[0]:
+				pos = castlingDict[char]
+				if not  == pos[0]:
 					continue
 				availableMoves.append(Castle(self, self.getSpace(pos[1]), pos[0], pos[1]))
 

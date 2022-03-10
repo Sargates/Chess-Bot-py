@@ -182,7 +182,8 @@ class King(Piece):
 					# 5. anydirection 1 square away and piece is a king( this is necessary to prevent a king move to a square controlled by another king)
 					if (0 <= j <= 3 and type == 'R') or \
 							(4 <= j <= 7 and type == 'B') or \
-							(i == 1 and type == 'p' and ((self.color == 'w' and 6 <= j <= 7) or (self.color != 'b' and 4 <= j <= 5))) or \
+							(i == 1 and type == 'p' and ((self.color == 'w' and 6 <= j <= 7) or \
+							(self.color != 'b' and 4 <= j <= 5))) or \
 							(type == 'Q') or (i == 1 and type == 'K'):
 						if possiblePin == (): # no piece blocking, so check the king
 							inCheck = True
