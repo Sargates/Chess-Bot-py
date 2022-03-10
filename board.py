@@ -1,3 +1,4 @@
+from sqlite3 import enable_shared_cache
 import pygame, os
 from pieces.move   import *
 from pieces.piece import Piece
@@ -40,7 +41,7 @@ class Board:
 				   'e': 4, 'f': 5, 'g': 6, 'h': 7}
 	colsToFiles = {v: k for k, v in filesToCols.items()}
 	highlightedSquares = {}
-	selectedIndex = -1
+	selectedIndex = None
 
 	checkMate = False
 	matchDraw = False
@@ -60,6 +61,15 @@ class Board:
 		self.fen = Fen("8/4npk1/5p1p/1Q5P/1p4P1/4r3/7q/3K1R2 w - - 1 49")
 
 		self.board = self.fen.boardParse()
+
+		self.moveFunctions = {
+		'p': self.getPawnMoves, 
+		'R': self.getRookMoves, 
+		'N': self.getKnightMoves, 
+		'B': self.getBishopMoves, 
+		'Q': self.getQueenMoves, 
+		'K': self.getKingMoves,
+	}
 
 	def reset(self, ):
 		pass
@@ -85,11 +95,7 @@ class Board:
 		
 		return (whitePos, blackPos)
 
-	def getPawnMoves(self, x, y):
-		pass
-	def getKnightMoves(self, i, j):
-		directions = [(-2, 1), (-1, 2), (1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1)]
-		moveDepths = [1]
+	def getPieceMoves(self, i, j, directions, moveDepths):
 
 		# inCheck, pins, checks, kingPos = king.getChecksandPins(board, king.getPos(board)) + (king.getPos(board),)
 		piecePinned = False
@@ -121,28 +127,121 @@ class Board:
 				endX = direction[0] * depth
 				endY = direction[1] * depth
 
+				startPos = (i, j)
 				endPos = (i + endX, j + endY)
-				space = self.getSpace(endPos)
-				if space == "--":
-					availableMoves.append(Move(self, (i, j), endPos))
+				startSpace = self.getSpace(*startPos)
+				endSpace = self.getSpace(*endPos)
+				if endSpace == "--":
+					availableMoves.append(Move(self, startSpace, endSpace, startPos, endPos))
 					continue
 				
-				if space.color != self.color:
-					availableMoves.append(Move(self, (i, j), endPos))
+				if endSpace[0] != startSpace[0]:
+					availableMoves.append(Move(self, startSpace, endSpace, startPos, endPos))
 					break
 				
 				# if attacking:
 				# 	availableMoves.append(Move(self, (i, j), endPos))
 				# 	break
 				break
+		
+		return availableMoves
+
+	def getPawnMoves(self, x, y):
+		pass
+
+	def getKnightMoves(self, x, y):
+		directions = [(-2, 1), (-1, 2), (1, 2), (2, 1), (2, -1), (1, -2), (-1, -2), (-2, -1)]
+		moveDepths = [1]
+
+		return self.getPieceMoves(x, y, directions, moveDepths)
+
 	def getBishopMoves(self, x, y):
-		pass
+		moveDepths = [x for x in range(1, 8)]
+		directions = [(-1, -1), (1, -1), (-1, 1), (1, 1)]
+
+		return self.getPieceMoves(x, y, directions, moveDepths)
+
 	def getRookMoves(self, x, y):
-		pass
+		moveDepths = [x for x in range(1,8)]
+		directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]
+
+		return self.getPieceMoves(x, y, directions, moveDepths)
+
 	def getQueenMoves(self, x, y):
-		pass
-	def getKingMoves(self, x, y):
-		pass
+		moveDepths = [x for x in range(1, 8)]
+		directions = [(-1, 0), (0, 1), (1, 0), (0, -1), (-1, -1), (1, -1), (-1, 1), (1, 1)]
+
+		return self.getPieceMoves(x, y, directions, moveDepths)
+
+	def getKingMoves(self, i, j):
+		moveDepths = [1]
+		directions = [(-1, 0), (0, 1), (1, 0), (0, -1), (-1, -1), (1, -1), (-1, 1), (1, 1)]
+		
+		
+		availableMoves = []
+
+		for direction in directions:
+			for depth in moveDepths:
+				x = direction[0]
+				y = direction[1]
+				# if inCheck:
+				# 	for check in checks:
+				# 		# print(check, direction)
+				# 		if not (check[2] == -x and check[3] == -y):
+				# 			break
+				# 	else:
+				# 		continue
+
+				startPos = (i, y)
+				startSpace = self.getSpace(*startPos)
+				endPos = (i+x, j+y)
+				endSpace = self.getSpace(*endPos)
+
+				# if endPos in takenSquares:
+				# 	continue
+
+				if startSpace == "--":
+					availableMoves.append(Move(self, startSpace, endSpace, startPos, endPos))
+					continue
+				
+				if endSpace[0] != startSpace[0]:
+					availableMoves.append(Move(self, startSpace, endSpace, startPos, endPos))
+				break
+
+		self.fen.refreshCastling(self)
+		castle = self.fen.castling
+
+		
+		castleToInterval = {
+			# change to support 2D indexing of b.board
+			"q": [2, 3],
+			"k": [5, 6],
+			"Q": [58 ,59],
+			"K": [61, 62]
+		}
+
+		if castle == "-":
+			return availableMoves
+
+		for char in castle:
+			interval = castleToInterval[char]
+
+			for square in interval:
+				if self.getSpace(square) != "--":
+					break
+				moves = self.getEnemyMoves(self)
+				if square in [move.endPos for move in moves]:
+					break
+			else:
+				pos = self.castlingDict[char]
+				# print(pos)
+				if not position == pos[0]:
+					continue
+				availableMoves.append(Castle(self, self.getSpace(pos[1]), pos[0], pos[1]))
+
+
+		return availableMoves
+
 
 	def getAllMoves(self, ):
 		pass
@@ -156,8 +255,59 @@ class Board:
 	def undoMove(self, ):
 		pass
 
-	def selectionLogic(self, ):
-		pass
+	def selectionLogic(self, index :tuple[int]):
+		if self.selectedIndex != None: # index is selected
+
+			space = self.getSpace(*self.selectedIndex)
+			if index == self.selectedIndex: # if selected index is clicked
+				self.selectedIndex = None
+				self.selectedMoves = []
+				return
+
+			tempMove = Move(self, space, self.getSpace(*index), self.selectedIndex, index)
+
+			if tempMove in self.selectedMoves: # if index in in avialable moves
+				move = self.selectedMoves[self.selectedMoves.index(tempMove)]
+				self.moveHistory.append(move)
+				if space.type == "p":
+					self.fen.halfMoveCount = 0
+				else:
+					self.fen.halfMoveCount += 1
+
+				self.fen.switchTurns(self.board)
+				move.makeMove()
+				self.checkForPromotion(move)
+				self.checkForEnPassant(move)
+				self.refreshChecksandPins()
+				self.fen.refreshCastling(self)
+				self.checkForCheckmate()
+
+				self.selectedIndex = None
+				self.selectedMoves = []
+				self.futureMoves = []
+				print(self.whiteInfo)
+				print(self.blackInfo)
+				print("\n", self.fen.getFenString(self.board), "\n")
+				return
+
+			if self.getSpace(*index) == "--": # selected index is not a piece
+				self.selectedIndex = None
+				self.selectedMoves = []
+				return
+
+			# guarenteed that clicked index is a different piece than is selected
+			if self.getSpace(*index)[0] == self.fen.colorToMove:
+				self.selectedIndex = index
+				self.selectedMoves = self.moveFunctions[self.getSpace(*index)[1]](*index)
+			else:
+				self.selectedIndex = None
+				self.selectedMoves = []
+
+			# for move in self.selectedMoves:
+			# 	print(move)
+		if self.selectedIndex == None:
+			self.selectedIndex = index
+			self.selectedMoves = self.moveFunctions[self.getSpace(*index)[1]](*index)
 
 	def getSpace(self, x, y):
 		return self.board[y][x]

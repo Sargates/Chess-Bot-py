@@ -2,7 +2,7 @@ import pygame
 
 from board import Board
 from pieces.move import Move
-from AI import AI
+from ai import AI
 
 WIDTH = HEIGHT = 768
 WINDOWSIZE = (WIDTH, HEIGHT)
@@ -19,8 +19,8 @@ pygame.init()
 
 
 def getPosToIndex(x, y):
-	newX = (x - 40 * (WIDTH/256)) // (22 * (WIDTH/256))
-	newY = (y - 40 * (WIDTH/256)) // (22 * (WIDTH/256))
+	newX = (x - 40 * (WIDTH//256)) // (22 * (WIDTH//256))
+	newY = (y - 40 * (WIDTH//256)) // (22 * (WIDTH//256))
 	
 	if (0 <= newX < 8 and 0 <= newY < 8):
 		return (newX, newY)
@@ -28,8 +28,8 @@ def getPosToIndex(x, y):
 	return -1
 
 def getIndexToPos(x1, y1):
-	x = (x1 % 8)  * 22 * WIDTH/256 + 40 *(WIDTH/256)
-	y = (y1 // 8) * 22 * WIDTH/256 + 40 *(WIDTH/256)
+	x = (x1)  * 22 * WIDTH/256 + 40 *(WIDTH/256)
+	y = (y1) * 22 * WIDTH/256 + 40 *(WIDTH/256)
 	
 	x += SQ_SIZE/2
 	y += SQ_SIZE/2
@@ -60,19 +60,19 @@ def renderHighlighted(b :Board):
 	SCREEN.blit(highlightedScreen, (0, 0))
 
 def renderMoves(b :Board):
-	if b.selectedIndex != -1:
+	if b.selectedIndex != None:
 		piece = b.getSpace(*b.selectedIndex)
 		if piece == "--":
-			b.selectedIndex = -1
+			b.selectedIndex = None
 			return
 
 		for move in b.selectedMoves:
-			pygame.draw.circle(SCREEN, (255, 0, 0), getIndexToPos(move.endPos), SQ_SIZE/5)
+			pygame.draw.circle(SCREEN, (255, 0, 0), getIndexToPos(*move.endPos), SQ_SIZE/5)
 
 
 def renderSelected(b :Board):
-	if b.selectedIndex != -1:
-		x, y = getIndexToPos(b.selectedIndex)
+	if b.selectedIndex != None:
+		x, y = getIndexToPos(*b.selectedIndex)
 		square = pygame.Rect(x-SQ_SIZE/2, y-SQ_SIZE/2, SQ_SIZE, SQ_SIZE)
 		pygame.draw.rect(SCREEN, (255, 0, 0), square, 2)
 
@@ -112,6 +112,9 @@ def main():
 					if e.button == 1: # left click
 						board.highlightedSquares = set()
 						board.selectionLogic(index)
+
+						for move in board.selectedMoves:
+							print(move)
 					if e.button == 3: # right click
 						if not index in board.highlightedSquares:
 							board.highlightedSquares.add(index)
