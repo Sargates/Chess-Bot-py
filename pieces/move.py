@@ -20,14 +20,12 @@ class Move:
 		return True
 	
 	def makeMove(self):
-		self.b.board[self.endPos] = self.pieceMoved
-		self.b.board[self.startPos] = "--"
-		self.pieceMoved.timesMoved += 1
+		self.b.board[self.endPos[1]][self.endPos[0]] = self.pieceMoved
+		self.b.board[self.startPos[1]][self.startPos[0]] = "--"
 
 	def undo(self):
 		self.b.board[self.endPos]   = self.pieceTaken
 		self.b.board[self.startPos] = self.pieceMoved
-		self.pieceMoved.timesMoved -= 1
 	
 	def redo(self):
 		self.makeMove()
@@ -60,9 +58,9 @@ class Castle():
 		self.makeMove()
 
 class EnPassant(Move):
-	def __init__(self, board, pieceMoved, pieceTaken, startPos, endPos) -> None:
-		super().__init__(board, pieceMoved, pieceTaken, startPos, endPos)
-		self.takenIndex = endPos-8 if pieceTaken.color == "w" else endPos+8
+	def __init__(self, board, startSquare, endSquare, startPos, endPos) -> None:
+		super().__init__(board, startSquare, endSquare, startPos, endPos)
+		self.takenIndex = endPos-8 if endSquare[0] == "w" else endPos+8
 		# print(self.takenIndex)
 		
 	def __str__(self) -> str:
