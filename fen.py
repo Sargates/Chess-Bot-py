@@ -29,17 +29,19 @@ class Fen:
 		"P": "wp",
 	}
 
+	
+
 	def __init__(self, string :str) -> None:
 		board, colorToMove, castling, enPassant, halfMoveCount, fullMoveCount = string.split(" ")
 
 		self.string = string
 		self.board = board
 		self.colorToMove = colorToMove
-		self.castling = castling
+		self.castling = [char for char in castling]
 		self.enPassant = enPassant
 		self.halfMoveCount = int(halfMoveCount)
 		self.fullMoveCount = int(fullMoveCount)
-		
+
 		self.history = []
 		self.future = []
 
@@ -48,7 +50,7 @@ class Fen:
 
 		self.board = board
 		self.colorToMove = colorToMove
-		self.castling = castling
+		self.castling = [char for char in castling]
 		self.enPassant = enPassant
 		self.halfMoveCount = int(halfMoveCount)
 		self.fullMoveCount = int(fullMoveCount)
@@ -61,54 +63,24 @@ class Fen:
 	
 	def redo(self):
 		state = self.future.pop(-1)
-		self.history.append(state)
+		self.history.append(self.string)
 		self.string = state
 		self.refresh()
 
-	def refreshCastling(self, board):
-		castle = ""
-		for pos in board.updateKingPos():
-			king = board.getSpace(pos)
-			if not ((king.color == "w" and pos == 60) or (king.color == "b" and pos == 4)):
-				# print(1)
-				continue
-
-			if king.timesMoved != 0:
-				# print(2)
-				continue
-
-			qRook = board.getSpace(pos-4)
-			kRook = board.getSpace(pos+3)
-			inCheck, pins, checks = king.getChecksandPins(board, pos)
-
-			if inCheck:
-				continue
-
-			if kRook != "--" and kRook.timesMoved == 0:
-				if king.color == "w":
-					castle += "K"
-				else:
-					castle += "k"
-			if qRook != "--" and qRook.timesMoved == 0:
-				if king.color == "w":
-					castle += "Q"
-				else:
-					castle += "q"
-		
-		if castle == "":
-			castle = "-"
-		self.castling = castle
+	def refreshCastling(self):
+		if self.castling == []:
+			self.castling = ["-"]
 
 	def getEnPassantPos(self):
 		if self.enPassant == "-":
-			return -1
-		return self.ranksToRows[self.enPassant[1]] * 8 + self.filesToCols[self.enPassant[0]]
+			return None
+		return (self.filesToCols[self.enPassant[0]], self.ranksToRows[self.enPassant[1]])
 	
 	def setEnPassant(self, index):
-		if index == -1:
+		if index == None:
 			self.enPassant = "-"
 			return
-		self.enPassant = self.colsToFiles[index%8] + self.rowsToRanks[index // 8]
+		self.enPassant = self.colsToFiles[index[0]] + self.rowsToRanks[index[1]]
 	
 	def promotePawn(self, b, position):
 		b[position] = b[position][0]+"Q"
@@ -133,11 +105,12 @@ class Fen:
 	
 	def refreshBoard(self, board):
 		boardString = ""
+
 		t = 0
-		for i in range(8):
-			for j in range(8):
-				pos = i * 8 + j
-				if board[pos] == "--":
+
+		for j in range(8):
+			for i in range(8):
+				if board[j][i] == "--":
 					t += 1
 					continue
 				
@@ -145,10 +118,10 @@ class Fen:
 					boardString += str(t)
 					t = 0
 
-				if board[pos].color == "b":
-					boardString += board[pos].type.lower()
+				if board[j][i][0] == "b":
+					boardString += board[j][i][1].lower()
 				else:
-					boardString += board[pos].type.upper()
+					boardString += board[j][i][1].upper()
 
 			if t != 0:
 				boardString += str(t)
@@ -163,11 +136,10 @@ class Fen:
 	
 	def getFenString(self, board) -> str:
 		self.refreshBoard(board)
-		self.string = f"{self.board} {self.colorToMove} {self.castling} {self.enPassant} {self.halfMoveCount} {self.fullMoveCount}"
+		self.string = f"{self.board} {self.colorToMove} {''.join(self.castling)} {self.enPassant} {self.halfMoveCount} {self.fullMoveCount}"
 		return self.string
 
 	def switchTurns(self, board):
-		self.future = []
 		string = self.getFenString(board)
 		# print(string)
 		self.history.append(string)

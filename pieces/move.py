@@ -24,8 +24,8 @@ class Move:
 		self.b.board[self.startPos[1]][self.startPos[0]] = "--"
 
 	def undo(self):
-		self.b.board[self.endPos]   = self.pieceTaken
-		self.b.board[self.startPos] = self.pieceMoved
+		self.b.board[self.endPos[1]][self.endPos[0]]   = self.pieceTaken
+		self.b.board[self.startPos[1]][self.startPos[0]] = self.pieceMoved
 	
 	def redo(self):
 		self.makeMove()
@@ -35,14 +35,14 @@ class Move:
 
 class Castle():
 	def __init__(self, board, king, rook, kingPos, rookPos) -> None:
-		dirVector = (rookPos - kingPos) // abs(rookPos - kingPos)
+		dirVector = (rookPos[0] - kingPos[0]) // abs(rookPos[0] - kingPos[0])
 
-		self.kingMove = Move(board, king, "--", kingPos, kingPos + dirVector * 2)
-		self.rookMove = Move(board, rook, "--", rookPos, kingPos + dirVector)
+		self.kingMove = Move(board, king, "--", kingPos, (kingPos[0] + dirVector * 2, kingPos[1]))
+		self.rookMove = Move(board, rook, "--", rookPos, (kingPos[0] + dirVector, kingPos[1]))
 		self.pieceMoved = king
 		self.pieceTaken = "--"
 		self.startPos = kingPos
-		self.endPos = kingPos + dirVector * 2
+		self.endPos = (kingPos[0] + dirVector * 2, kingPos[1])
 
 		# print(self.kingMove, self.rookMove, self.pieceMoved, self.pieceTaken, self.startPos, self.endPos)
 	
@@ -60,23 +60,21 @@ class Castle():
 class EnPassant(Move):
 	def __init__(self, board, startSquare, endSquare, startPos, endPos) -> None:
 		super().__init__(board, startSquare, endSquare, startPos, endPos)
-		self.takenIndex = endPos-8 if endSquare[0] == "w" else endPos+8
+		self.takenIndex = (endPos[0], endPos[1]-1) if endSquare[0] == "w" else (endPos[0], endPos[1]+1)
 		# print(self.takenIndex)
 		
 	def __str__(self) -> str:
 		return f"{self.pieceMoved}, {self.pieceTaken}, {self.startPos}, {self.endPos}"
 
 	def makeMove(self):
-		self.b.board[self.endPos] = self.pieceMoved
-		self.b.board[self.startPos] = "--"
-		self.b.board[self.takenIndex] = "--"
-		self.pieceMoved.timesMoved += 1
+		self.b.board[self.endPos[1]][self.endPos[0]] = self.pieceMoved
+		self.b.board[self.startPos[1]][self.startPos[0]] = "--"
+		self.b.board[self.takenIndex[1]][self.takenIndex[0]] = "--"
 
 	def undo(self):
-		self.b.board[self.endPos]   = "--"
-		self.b.board[self.startPos] = self.pieceMoved
-		self.b.board[self.takenIndex] = self.pieceTaken
-		self.pieceMoved.timesMoved -= 1
+		self.b.board[self.endPos[1]][self.endPos[0]]   = "--"
+		self.b.board[self.startPos[1]][self.startPos[0]] = self.pieceMoved
+		self.b.board[self.takenIndex[1]][self.takenIndex[0]] = self.pieceTaken
 	
 	def redo(self):
 		self.makeMove()
