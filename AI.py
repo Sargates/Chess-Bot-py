@@ -21,11 +21,11 @@ class AI:
 
 
 		for move in allMoves:
-			board.makeMoveOnBoard(move, True)
+			board.makeMove(move, True)
 
 			self.getTotalMoves(depth-1, board)
 
-			board.unmakeMoveOnBoard()
+			board.undoMove()
 
 
 	def getMove(self, board :Board) -> Move:
@@ -35,14 +35,14 @@ class AI:
 		bestMove = None
 		bestEval = -(2**31)
 		for move in allMoves:
-			board.makeMoveOnBoard(move, True)
+			board.makeMove(move)
 
 			iterEval = -self.search(0, board)
 			if bestEval < iterEval:
 				bestEval = iterEval
 				bestMove = move
 
-			board.unmakeMoveOnBoard()
+			board.undoMove()
 		
 		return bestMove
 	

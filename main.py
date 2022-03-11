@@ -52,7 +52,7 @@ def renderPieces(b :Board):
 def renderHighlighted(b :Board):
 	highlightedScreen = pygame.Surface((WIDTH, HEIGHT), pygame.SRCALPHA)
 	for index in b.highlightedSquares:
-		x, y = getIndexToPos(index)
+		x, y = getIndexToPos(*index)
 		square = pygame.Rect(x-SQ_SIZE/2, y-SQ_SIZE/2, SQ_SIZE, SQ_SIZE)
 
 		pygame.draw.rect(highlightedScreen, (255, 0, 0, 100), square, 0)
@@ -113,8 +113,13 @@ def main():
 						board.highlightedSquares = set()
 						board.selectionLogic(index)
 
-						for move in board.selectedMoves:
-							print(move)
+						# print()
+
+						# print(board.selectedIndex)
+						# print(board.selectedIndex)
+
+						# for move in board.selectedMoves:
+						# 	print(move)
 					if e.button == 3: # right click
 						if not index in board.highlightedSquares:
 							board.highlightedSquares.add(index)
@@ -125,20 +130,20 @@ def main():
 						
 			if e.type == pygame.KEYDOWN:
 				if e.key == pygame.K_z and len(board.moveHistory) > 0:
-					board.unmakeMoveOnBoard()
-					board.unmakeMoveOnBoard()
+					board.undoMove()
+					board.undoMove()
 
 					board.fen.refreshBoard(board.board)
-				elif e.key == pygame.K_y and len(board.futureMoves) > 0:
-					board.makeMoveOnBoard(board.moveHistory.pop(-1))
-					board.makeMoveOnBoard(board.moveHistory.pop(-1))
+				elif e.key == pygame.K_y and len(board.moveFuture) > 0:
+					board.makeMove(board.moveFuture.pop(-1))
+					board.fen.redo()
+					board.makeMove(board.moveFuture.pop(-1))
+					board.fen.redo()
 
 					board.fen.refreshBoard(board.board)
 				elif e.key == pygame.K_v:
-					print(board.whiteInfo)
-					print(board.blackInfo)
-					print(len(board.getAllMoves()))
-					print(ai.totalMoves)
+					# print(len(board.getAllMoves()))
+					# print(ai.totalMoves)
 
 					print()
 					for string in board.fen.history:
@@ -152,12 +157,11 @@ def main():
 			print("Ending FEN String\n", board.fen.getFenString(board.board))
 			print(f"checkMate = {board.checkMate}")
 			print(f"matchDraw = {board.matchDraw}")
-			checkmatePrinting = True
 			continue
 
-		# if board.fen.colorToMove == "b" and not (board.checkMate or board.matchDraw):
-		# 	aiMove = ai.getMove(board)
-		# 	board.makeMoveOnBoard(aiMove)
+		if board.fen.colorToMove == "b" and not (board.checkMate or board.matchDraw):
+			aiMove = ai.getMove(board)
+			board.makeMove(aiMove)
 
 		render(board)
 			
