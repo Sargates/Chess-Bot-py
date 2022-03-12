@@ -143,7 +143,9 @@ def main():
 					board.fen.refreshBoard(board.board)
 				elif e.key == pygame.K_v:
 					# print(len(board.getAllMoves()))
-					# print(ai.totalMoves)
+					ai.getTotalMoves(ai.maxDepth, board)
+					for k, v in ai.depthList.items():
+						print(f"{k}\t", v)
 
 					print()
 					for string in board.fen.history:
