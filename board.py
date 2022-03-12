@@ -106,21 +106,29 @@ class Board:
 	def checkCastling(self, move :Move):
 		if move.pieceMoved[1] == "K":
 			if move.pieceMoved[0] == "w":
-				self.fen.castling.pop(self.fen.castling.index("K"))
-				self.fen.castling.pop(self.fen.castling.index("Q"))
+				if "K" in self.fen.castling:
+					self.fen.castling.pop(self.fen.castling.index("K"))
+				if "Q" in self.fen.castling:
+					self.fen.castling.pop(self.fen.castling.index("Q"))
 			if move.pieceMoved[0] == "b":
-				self.fen.castling.pop(self.fen.castling.index("k"))
-				self.fen.castling.pop(self.fen.castling.index("q"))
+				if "k" in self.fen.castling:
+					self.fen.castling.pop(self.fen.castling.index("k"))
+				if "q" in self.fen.castling:
+					self.fen.castling.pop(self.fen.castling.index("q"))
 		
 		if move.pieceMoved[1] == "R":
 			if move.startPos == (7,7):
-				self.fen.castling.pop(self.fen.castling.index("K"))
+				if "K" in self.fen.castling:
+					self.fen.castling.pop(self.fen.castling.index("K"))
 			if move.startPos == (0,7):
-				self.fen.castling.pop(self.fen.castling.index("Q"))
+				if "Q" in self.fen.castling:
+					self.fen.castling.pop(self.fen.castling.index("Q"))
 			if move.startPos == (7,0):
-				self.fen.castling.pop(self.fen.castling.index("k"))
+				if "k" in self.fen.castling:
+					self.fen.castling.pop(self.fen.castling.index("k"))
 			if move.startPos == (0,0):
-				self.fen.castling.pop(self.fen.castling.index("q"))
+				if "q" in self.fen.castling:
+					self.fen.castling.pop(self.fen.castling.index("q"))
 						
 
 		self.fen.refreshCastling()
@@ -510,6 +518,7 @@ class Board:
 		self.fen.refreshCastling()
 		# self.checkForCheckmate()
 		self.moveFuture.append(move)
+		self.fen.undo()
 
 	def selectionLogic(self, index :tuple[int]):
 		if self.selectedIndex != None: # index is selected
