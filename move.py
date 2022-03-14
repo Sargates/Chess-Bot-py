@@ -85,19 +85,31 @@ class Castle():
 		self.makeMove()
 
 class Promotion():
-	def __init__(self, pawnMove :Move) -> None:
+	def __init__(self, pawnMove :Move, type :str) -> None:
 		self.pawnMove = pawnMove
+		self.type = type
 
 		for k, v in pawnMove.__dict__.items():
 			self.__dict__[k] = v
 
-		self.promotedTo = None
+
+		self.pawnMove.b.promotionDict[type].setAction(self.makeMove)
 	
 	def setPromotion(self, type):
 		self.promotedTo = type
 	
 	def makeMove(self):
 		self.pawnMove.makeMove()
+
+		i = self.pawnMove.endPos[0]
+		j = self.pawnMove.endPos[1]
+		self.pawnMove.b.board[j][i] = self.pawnMove.b.board[j][i][0] + self.type
+		self.pawnMove.b.waitingOnPromotion = False
+		
+		RenderPipeline.removeAsset("R")
+		RenderPipeline.removeAsset("B")
+		RenderPipeline.removeAsset("N")
+		RenderPipeline.removeAsset("Q")
 	
 	def undo(self):
 		self.pawnMove.undo()
@@ -106,19 +118,6 @@ class Promotion():
 		self.makeMove()
 
 	
-	def promotePawn(self, type):
-		i = self.pawnMove.endPos[0]
-		j = self.pawnMove.endPos[1]
-		self.pawnMove.b.board[j][i] = self.pawnMove.b.board[j][i][0] + type
-		self.pawnMove.b.waitingOnPromotion = False
-
-		RenderPipeline.removeAsset(self.pawnMove.b.rookPromotion)
-		RenderPipeline.removeAsset(self.pawnMove.b.bishopPromotion)
-		RenderPipeline.removeAsset(self.pawnMove.b.knightPromotion)
-		RenderPipeline.removeAsset(self.pawnMove.b.queenPromotion)
-
-		self.pawnMove.b.rookPromotion.setAction		(None)
-		self.pawnMove.b.bishopPromotion.setAction	(None)
-		self.pawnMove.b.knightPromotion.setAction	(None)
-		self.pawnMove.b.queenPromotion.setAction	(None)
+	# def promotePawn(self, type):
+		
 

@@ -61,11 +61,11 @@ class Board:
 	def __init__(self, ):
 		self.loadImages()
 		
-		# self.fen = Fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+		self.fen = Fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 
 		# self.fen = Fen("8/4npk1/5p1p/1Q5P/1p4P1/4r3/7q/3K1R2 w - - 1 49")
 		# self.fen = Fen("84npk15p1p3r3P1p4P13Q3q3K45R2 b - - 6 51")
-		self.fen = Fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8")
+		# self.fen = Fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8")
 		
 
 		self.board = self.fen.boardParse()
@@ -82,10 +82,17 @@ class Board:
 		self.waitingOnPromotion = False
 
 
-		self.rookPromotion 		= Box(pygame.Rect(688, 114, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False, args=("R",))
-		self.bishopPromotion 	= Box(pygame.Rect(688, 174, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False, args=("B",))
-		self.knightPromotion 	= Box(pygame.Rect(688, 234, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False, args=("N",))
-		self.queenPromotion 	= Box(pygame.Rect(688, 294, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False, args=("Q",))
+		self.rookPromotion 		= Box(pygame.Rect(688, 114, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False)
+		self.bishopPromotion 	= Box(pygame.Rect(688, 174, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False)
+		self.knightPromotion 	= Box(pygame.Rect(688, 234, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False)
+		self.queenPromotion 	= Box(pygame.Rect(688, 294, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False)
+
+		self.promotionDict = {
+			'R': self.rookPromotion,
+			'N': self.bishopPromotion,
+			'B': self.knightPromotion,
+			'Q': self.queenPromotion
+		}
 
 	def reset(self, ):
 		pass
@@ -99,11 +106,6 @@ class Board:
 			RenderPipeline.addAsset(self.bishopPromotion)
 			RenderPipeline.addAsset(self.knightPromotion)
 			RenderPipeline.addAsset(self.queenPromotion)
-
-			self.rookPromotion.setAction(move.promotePawn)
-			self.bishopPromotion.setAction(move.promotePawn)
-			self.knightPromotion.setAction(move.promotePawn)
-			self.queenPromotion.setAction(move.promotePawn)
 
 			self.rookPromotion.image = self.images[self.idToIndex[move.pieceMoved[0] + "R"]]
 			self.bishopPromotion.image = self.images[self.idToIndex[move.pieceMoved[0] + "B"]]
@@ -289,10 +291,11 @@ class Board:
 			endSpace = self.getSpace(*endPos)
 			possiblePromotion = Move(self, space, endSpace, (i, j), endPos)
 			if endPos[1] == int(3.5 + (3.5 * forwardOne[1])):
-				availableMoves.append(Promotion(possiblePromotion))
-				availableMoves.append(Promotion(possiblePromotion))
-				availableMoves.append(Promotion(possiblePromotion))
-				availableMoves.append(Promotion(possiblePromotion))
+				self.waitingOnPromotion = True
+				availableMoves.append(Promotion(possiblePromotion, "R"))
+				availableMoves.append(Promotion(possiblePromotion, "B"))
+				availableMoves.append(Promotion(possiblePromotion, "N"))
+				availableMoves.append(Promotion(possiblePromotion, "Q"))
 			else:
 				availableMoves.append(possiblePromotion)
 
@@ -311,10 +314,11 @@ class Board:
 			if endSpace != "--" and endSpace[0] != color:
 				possiblePromotion = Move(self, space, endSpace, (i, j), endPos)
 				if endPos[1] == int(3.5 + (3.5 * forwardOne[1])):
-					availableMoves.append(Promotion(possiblePromotion))
-					availableMoves.append(Promotion(possiblePromotion))
-					availableMoves.append(Promotion(possiblePromotion))
-					availableMoves.append(Promotion(possiblePromotion))
+					self.waitingOnPromotion = True
+					availableMoves.append(Promotion(possiblePromotion, "R"))
+					availableMoves.append(Promotion(possiblePromotion, "B"))
+					availableMoves.append(Promotion(possiblePromotion, "N"))
+					availableMoves.append(Promotion(possiblePromotion, "Q"))
 				else:
 					availableMoves.append(possiblePromotion)
 			
@@ -328,10 +332,11 @@ class Board:
 			if endSpace != "--" and endSpace[0] != color:
 				possiblePromotion = Move(self, space, endSpace, (i, j), endPos)
 				if endPos[1] == int(3.5 + (3.5 * forwardOne[1])):
-					availableMoves.append(Promotion(possiblePromotion))
-					availableMoves.append(Promotion(possiblePromotion))
-					availableMoves.append(Promotion(possiblePromotion))
-					availableMoves.append(Promotion(possiblePromotion))
+					self.waitingOnPromotion = True
+					availableMoves.append(Promotion(possiblePromotion, "R"))
+					availableMoves.append(Promotion(possiblePromotion, "B"))
+					availableMoves.append(Promotion(possiblePromotion, "N"))
+					availableMoves.append(Promotion(possiblePromotion, "Q"))
 				else:
 					availableMoves.append(possiblePromotion)
 			
@@ -487,6 +492,9 @@ class Board:
 			"Q": ((4,7), (0,7)),
 			"K": ((4,7), (7,7))
 		}
+
+		if self.isSquareCovered(i, j, color)[0]:
+			return availableMoves
 
 		if castle == ["-"]:
 			return availableMoves

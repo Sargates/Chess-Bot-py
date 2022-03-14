@@ -7,6 +7,7 @@ from AI import AI
 WIDTH = HEIGHT = 768
 WINDOWSIZE = (WIDTH, HEIGHT)
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
+pygame.display.set_caption("The cool")
 SQ_SIZE = ((256 - 80)/8) * (WIDTH/256)
 OFFSET = 40 * (WIDTH/256)
 PIECE_OFFSET = (10/11) * SQ_SIZE / 2
@@ -174,16 +175,22 @@ def main():
 
 					}
 
-					print()
-					for k, v in ai.depthList.items():
-						moveLists[k] = []
-						ai.depthList[k] = ai.getTotalMoves(k, board, k, moveLists[k])
-						print(f"{k}\t{ai.depthList[k]}")
-					
+					# print()
+					# for k, v in ai.depthList.items():
+					# 	moveLists[k] = []
+					# 	ai.depthList[k] = ai.getTotalMoves(k, board, k, moveLists[k])
+					# 	print(f"{k}\t{ai.depthList[k]}")
+
+					for asset in RenderPipeline.pipeline:
+						print(asset)
+
+					for method in RenderPipeline.methods:
+						print(method)
+
 					# print(ai.captures)
 
-					for m1321321 in moveLists[1]:
-						print(m1321321)
+					# for m1321321 in moveLists[1]:
+					# 	print(m1321321)
 
 					print()
 					# for string in board.fen.history:

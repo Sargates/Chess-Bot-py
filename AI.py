@@ -45,7 +45,7 @@ class AI:
 			# print((m-depth)*"\t" + chessMove)
 			oneStepDeep = self.getTotalMoves(depth-1, board, m, moveList)
 
-			if depth == m - 1:
+			if depth == m:
 				print(f"{chessMove}: {oneStepDeep}")
 
 			numPositions += oneStepDeep
