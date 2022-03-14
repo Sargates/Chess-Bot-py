@@ -1,9 +1,4 @@
-from pieces.bishop import Bishop
-from pieces.king   import King
-from pieces.knight import Knight
-from pieces.pawn   import Pawn
-from pieces.queen  import Queen
-from pieces.rook   import Rook
+from move	import Move
 
 class Fen:
 	# rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1
@@ -32,6 +27,12 @@ class Fen:
 	
 
 	def __init__(self, string :str) -> None:
+		self.setState(string)
+
+		self.history = []
+		self.future = []
+	
+	def setState(self, string :str) -> None:
 		board, colorToMove, castling, enPassant, halfMoveCount, fullMoveCount = string.split(" ")
 
 		self.string = string
@@ -42,8 +43,8 @@ class Fen:
 		self.halfMoveCount = int(halfMoveCount)
 		self.fullMoveCount = int(fullMoveCount)
 
-		self.history = []
-		self.future = []
+	def getChessMove(self, move :Move) -> str:
+		return self.colsToFiles[move.startPos[0]]+self.rowsToRanks[move.startPos[1]] + self.colsToFiles[move.endPos[0]]+self.rowsToRanks[move.endPos[1]]
 
 	def refresh(self):
 		board, colorToMove, castling, enPassant, halfMoveCount, fullMoveCount = self.string.split(" ")
@@ -127,7 +128,7 @@ class Fen:
 				boardString += str(t)
 
 			t = 0
-			if i != 7:
+			if i == 7:
 				boardString += "/"
 		
 		self.board = boardString

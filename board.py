@@ -1,15 +1,7 @@
-from tokenize import endpats
-from turtle import color
 import pygame, os
-from pieces.move   import *
-from pieces.piece import Piece
-from pieces.king   import King
-from pieces.pawn   import Pawn
-from pieces.bishop import Bishop
-from pieces.knight import Knight
-from pieces.rook   import Rook
-from pieces.queen  import Queen
+from move   import *
 from fen import Fen
+from PygameExtensions import *
 
 WIDTH = HEIGHT = 768
 WINDOWSIZE = (WIDTH, HEIGHT)
@@ -62,15 +54,18 @@ class Board:
 
 		for piece in ['bB', 'bK', 'bN', 'bp', 'bQ', 'bR', 'wB', 'wK', 'wN', 'wp', 'wQ', 'wR']:
 			self.images.append(pygame.transform.scale(pygame.image.load(os.path.join(os.path.dirname(os.path.abspath(__file__)) + "/img/" + piece + '.png')), (int(SQ_SIZE * 10/11), int(SQ_SIZE * 10/11))))
+			
 		
 		self.boardImage = pygame.transform.scale(pygame.image.load(os.path.join(os.path.dirname(os.path.abspath(__file__)) + "/img/board_alt.png")), (WIDTH, HEIGHT))
 
 	def __init__(self, ):
 		self.loadImages()
+		
+		# self.fen = Fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 
 		# self.fen = Fen("8/4npk1/5p1p/1Q5P/1p4P1/4r3/7q/3K1R2 w - - 1 49")
 		# self.fen = Fen("84npk15p1p3r3P1p4P13Q3q3K45R2 b - - 6 51")
-		self.fen = Fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+		self.fen = Fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8")
 		
 
 		self.board = self.fen.boardParse()
@@ -84,14 +79,36 @@ class Board:
 			'K': self.getKingMoves,
 		}
 
+		self.waitingOnPromotion = False
+
+
+		self.rookPromotion 		= Box(pygame.Rect(688, 114, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False, args=("R",))
+		self.bishopPromotion 	= Box(pygame.Rect(688, 174, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False, args=("B",))
+		self.knightPromotion 	= Box(pygame.Rect(688, 234, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False, args=("N",))
+		self.queenPromotion 	= Box(pygame.Rect(688, 294, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False, args=("Q",))
+
 	def reset(self, ):
 		pass
 
-	def checkForPromotion(self):
-		for i in [0, 7]:
-			for j in range(8):
-				if self.board[i][j][1] == "p":
-					self.board[i][j] = self.board[i][j][0] + "Q"
+	def checkForPromotion(self, move :Move):
+		# print("big cum")
+		if type(move) == Promotion:
+			# print("big cum 2")
+			self.waitingOnPromotion = True
+			RenderPipeline.addAsset(self.rookPromotion)
+			RenderPipeline.addAsset(self.bishopPromotion)
+			RenderPipeline.addAsset(self.knightPromotion)
+			RenderPipeline.addAsset(self.queenPromotion)
+
+			self.rookPromotion.setAction(move.promotePawn)
+			self.bishopPromotion.setAction(move.promotePawn)
+			self.knightPromotion.setAction(move.promotePawn)
+			self.queenPromotion.setAction(move.promotePawn)
+
+			self.rookPromotion.image = self.images[self.idToIndex[move.pieceMoved[0] + "R"]]
+			self.bishopPromotion.image = self.images[self.idToIndex[move.pieceMoved[0] + "B"]]
+			self.knightPromotion.image = self.images[self.idToIndex[move.pieceMoved[0] + "N"]]
+			self.queenPromotion.image = self.images[self.idToIndex[move.pieceMoved[0] + "Q"]]
 
 	def checkForEnPassant(self, move :Move):
 		if move.pieceMoved[1] == "p" and abs(move.endPos[1] - move.startPos[1]) == 2 and move.startPos[1]:
@@ -99,9 +116,6 @@ class Board:
 			return
 		
 		self.fen.setEnPassant(None)
-
-	def checkForCheckmate(self, ):
-		pass
 
 	def checkCastling(self, move :Move):
 		if move.pieceMoved[1] == "K":
@@ -134,9 +148,6 @@ class Board:
 		self.fen.refreshCastling()
 
 	def getKingPos(self):
-		"""
-		return (whitePos, blackPos)
-		"""
 		whitePos, blackPos = -1, -1
 		for row in range(len(self.board)):
 			for col in range(len(self.board[row])):
@@ -276,10 +287,19 @@ class Board:
 		endPos = (i + forwardOne[0], j + forwardOne[1])
 		if 0 <= endPos[0] < 8 and 0 <= endPos[1] < 8 and self.getSpace(i + forwardOne[0], j + forwardOne[1]) == "--" and not (piecePinned and forwardOne != pinDirection):
 			endSpace = self.getSpace(*endPos)
-			availableMoves.append(Move(self, space, endSpace, (i, j), endPos))
-		
+			possiblePromotion = Move(self, space, endSpace, (i, j), endPos)
+			if endPos[1] == int(3.5 + (3.5 * forwardOne[1])):
+				availableMoves.append(Promotion(possiblePromotion))
+				availableMoves.append(Promotion(possiblePromotion))
+				availableMoves.append(Promotion(possiblePromotion))
+				availableMoves.append(Promotion(possiblePromotion))
+			else:
+				availableMoves.append(possiblePromotion)
+
+
+
 		endPos = (i + forwardTwo[0], j + forwardTwo[1])
-		if 0 <= endPos[0] < 8 and 0 <= endPos[1] < 8 and self.getSpace(i + forwardTwo[0], j + forwardTwo[1]) == "--" and not (piecePinned and forwardOne != pinDirection) and j == int(direction[1] * (-2.5) + 3.5):
+		if 0 <= endPos[0] < 8 and 0 <= endPos[1] < 8 and self.getSpace(i + forwardOne[0], j + forwardOne[1]) == "--" and self.getSpace(i + forwardTwo[0], j + forwardTwo[1]) == "--" and not (piecePinned and forwardOne != pinDirection) and j == int(direction[1] * (-2.5) + 3.5):
 			endSpace = self.getSpace(*endPos)
 			availableMoves.append(Move(self, space, endSpace, (i, j), endPos))
 
@@ -289,7 +309,14 @@ class Board:
 		if not (piecePinned and forwardQ != pinDirection) and 0 <= endPos[0] < 8 and 0 <= endPos[1] < 8:
 			endSpace = self.getSpace(*endPos)
 			if endSpace != "--" and endSpace[0] != color:
-				availableMoves.append(Move(self, space, endSpace, (i, j), endPos))
+				possiblePromotion = Move(self, space, endSpace, (i, j), endPos)
+				if endPos[1] == int(3.5 + (3.5 * forwardOne[1])):
+					availableMoves.append(Promotion(possiblePromotion))
+					availableMoves.append(Promotion(possiblePromotion))
+					availableMoves.append(Promotion(possiblePromotion))
+					availableMoves.append(Promotion(possiblePromotion))
+				else:
+					availableMoves.append(possiblePromotion)
 			
 			if (endPos[0], endPos[1] - forwardQ[1]) == self.fen.getEnPassantPos():
 				endSpace = self.getSpace(endPos[0], endPos[1] - forwardQ[1])
@@ -299,7 +326,14 @@ class Board:
 		if not (piecePinned and forwardK != pinDirection) and 0 <= endPos[0] < 8 and 0 <= endPos[1] < 8:
 			endSpace = self.getSpace(*endPos)
 			if endSpace != "--" and endSpace[0] != color:
-				availableMoves.append(Move(self, space, endSpace, (i, j), endPos))
+				possiblePromotion = Move(self, space, endSpace, (i, j), endPos)
+				if endPos[1] == int(3.5 + (3.5 * forwardOne[1])):
+					availableMoves.append(Promotion(possiblePromotion))
+					availableMoves.append(Promotion(possiblePromotion))
+					availableMoves.append(Promotion(possiblePromotion))
+					availableMoves.append(Promotion(possiblePromotion))
+				else:
+					availableMoves.append(possiblePromotion)
 			
 			if (endPos[0], endPos[1] - forwardK[1]) == self.fen.getEnPassantPos():
 				endSpace = self.getSpace(endPos[0], endPos[1] - forwardK[1])
@@ -441,21 +475,22 @@ class Board:
 
 		
 		castleToInterval = {
-			"q": [(1,0), (2,0)],
+			"q": [(2,0), (3,0)],
 			"k": [(5,0), (6,0)],
-			"Q": [(1,7) ,(2,7)],
+			"Q": [(2,7) ,(3,7)],
 			"K": [(5,7), (6,7)]
 		}
 
 		castlingDict = {
-			"q": ((3,0), (0,0)),
+			"q": ((4,0), (0,0)),
 			"k": ((4,0), (7,0)),
-			"Q": ((3,7), (0,7)),
+			"Q": ((4,7), (0,7)),
 			"K": ((4,7), (7,7))
 		}
 
 		if castle == ["-"]:
 			return availableMoves
+		
 
 		for char in castle:
 			interval = castleToInterval[char]
@@ -463,25 +498,26 @@ class Board:
 			for square in interval:
 				if self.getSpace(*square) != "--":
 					break
-				if not (self.isSquareCovered(*square, color))[0]:
+				coverInfo = self.isSquareCovered(*square, color)
+				if coverInfo[0]:
 					break
 			else:
 				pos = castlingDict[char]
 				if not (i, j) == pos[0]:
 					continue
-				availableMoves.append(Castle(self, startPos, self.getSpace(*pos[1]), pos[0], pos[1]))
+				availableMoves.append(Castle(self, startSpace, self.getSpace(*pos[1]), pos[0], pos[1]))
 
 
 		return availableMoves
 
-	def getAllMoves(self):
+	def getAllMoves(self) -> list[Move]:
 		color = self.fen.colorToMove
 		totalMoves = []
 
 		for i in range(8):
 			for j in range(8):
 				if self.board[i][j][0] == color:
-					totalMoves.extend(self.moveFunctions[self.board[i][j][1]](i, j))
+					totalMoves.extend(self.moveFunctions[self.board[i][j][1]](j, i))
 		
 		return totalMoves
 
@@ -505,7 +541,7 @@ class Board:
 	def makeMove(self, move :Move):
 		self.fen.switchTurns(self.board)
 		move.makeMove()
-		self.checkForPromotion()
+		self.checkForPromotion(move)
 		self.checkForEnPassant(move)
 		self.checkCastling(move)
 		# self.checkForCheckmate()
@@ -514,6 +550,19 @@ class Board:
 	def undoMove(self):
 		move = self.moveHistory.pop(-1)
 		move.undo()
+		if type(move) == Promotion:
+			self.waitingOnPromotion = False
+
+			RenderPipeline.removeAsset(self.rookPromotion)
+			RenderPipeline.removeAsset(self.bishopPromotion)
+			RenderPipeline.removeAsset(self.knightPromotion)
+			RenderPipeline.removeAsset(self.queenPromotion)
+
+			self.rookPromotion.setAction	(None)
+			self.bishopPromotion.setAction	(None)
+			self.knightPromotion.setAction	(None)
+			self.queenPromotion.setAction	(None)
+
 		self.checkForEnPassant(move)
 		self.fen.refreshCastling()
 		# self.checkForCheckmate()

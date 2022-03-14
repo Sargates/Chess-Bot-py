@@ -1,35 +1,64 @@
 from board import Board
-from pieces.move import Move
+from move import Move
 import random
 
 
 class AI:
+	heirarchy = {
+		"p": 1,
+		"N": 2,
+		"B": 3,
+		"R": 4,
+		"Q": 5,
+		"K": 6
+
+	}
+
 	def __init__(self) -> None:
 		self.totalMoves = 0
 		self.maxDepth = 5
-		self.depthList = {x: 0 for x in range(self.maxDepth, 0, -1)}
-		pass
-	
-	def getTotalMoves(self, depth :int, board :Board):
-		allMoves = board.getAllMoves()
+		self.depthList = {x: 0 for x in range(3)}
+		self.stateList = {}
+		self.captures = 0
+
 		
+		
+	
+	def getTotalMoves(self, depth :int, board :Board, m=None, moveList :list[str]=[]):
+		if m == None:
+			print(m)
+			m = depth
 
 		if depth == 0:
-			return
+			return 1
 
-		self.depthList[depth] += len(allMoves)
-
-		print(self.depthList, end="\r")
-
-
+		allMoves = board.getAllMoves()
+		# allMoves.sort(key= lambda x: self.heirarchy[x.pieceMoved[1]])
+		numPositions = 0
 
 		for move in allMoves:
-			board.makeMove(move)
+			chessMove = board.fen.getChessMove(move)
 
-			self.getTotalMoves(depth-1, board)
+			board.makeMove(move)
+			moveList.append((m-depth)*"\t" + chessMove)
+
+			# print((m-depth)*"\t" + chessMove)
+			oneStepDeep = self.getTotalMoves(depth-1, board, m, moveList)
+
+			if depth == m - 1:
+				print(f"{chessMove}: {oneStepDeep}")
+
+			numPositions += oneStepDeep
+			# print(f"{m}\t{numPositions}", end="\r")
+			
 
 			board.undoMove()
 
+
+		return numPositions
+		
+
+		
 
 	def getMove(self, board :Board) -> Move:
 		self.totalMoves = 0
