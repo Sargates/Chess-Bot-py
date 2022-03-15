@@ -128,7 +128,7 @@ class Fen:
 				boardString += str(t)
 
 			t = 0
-			if i == 7:
+			if i == 7 and j != 7:
 				boardString += "/"
 		
 		self.board = boardString

@@ -4,6 +4,7 @@ class RenderPipeline:
 	pipeline = []
 	methods = []
 	screen = None
+	printMessages = True
 
 	@staticmethod
 	def setScreen(s :pygame.Surface):
@@ -27,36 +28,36 @@ class RenderPipeline:
 	def addAsset(object):
 		if not object in RenderPipeline.pipeline:
 			RenderPipeline.pipeline.append(object)
-			print(f"Added method: {object}")
+			jflkadsjflskd = print(f"Added method: {object}") if RenderPipeline.printMessages else None
 			return
 		
-		print(f"Failed to add: {object}")
+		jflkadsjflskd = print(f"Failed to add: {object}") if RenderPipeline.printMessages else None
 	
 	@staticmethod
 	def removeAsset(object):
 		if not object in RenderPipeline.pipeline:
-			print(f"Failed to remove: {object}")
+			jflkadsjflskd = print(f"Failed to remove: {object}") if RenderPipeline.printMessages else None
 			return
 		
 		RenderPipeline.pipeline.pop(RenderPipeline.pipeline.index(object))
-		print(f"Removed object: {object}")
+		jflkadsjflskd = print(f"Removed object: {object}") if RenderPipeline.printMessages else None
 	
 	@staticmethod
 	def addMethod(*method):
 		if not method in RenderPipeline.methods:
 			RenderPipeline.methods.append(method)
-			print(f"Added method: {method}")
+			jflkadsjflskd = print(f"Added method: {method}") if RenderPipeline.printMessages else None
 			return
 		
-		print(f"Failed to add: {method}")
+		jflkadsjflskd = print(f"Failed to add: {method}") if RenderPipeline.printMessages else None
 	
 	@staticmethod
 	def removeMethod(method):
 		for m in RenderPipeline.methods:
 			if m[0] == method:
 				RenderPipeline.methods.pop(RenderPipeline.methods.index(m))
-				print(f"Removed method: {m}")
+				jflkadsjflskd = print(f"Removed method: {m}") if RenderPipeline.printMessages else None
 				break
 		else:
-			print(f"Failed to remove: {method}")
+			jflkadsjflskd = print(f"Failed to remove: {method}") if RenderPipeline.printMessages else None
 			return

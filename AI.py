@@ -1,3 +1,4 @@
+from tkinter import E
 from board import Board
 from move import Move
 import random
@@ -16,8 +17,8 @@ class AI:
 
 	def __init__(self) -> None:
 		self.totalMoves = 0
-		self.maxDepth = 5
-		self.depthList = {x: 0 for x in range(3)}
+		self.maxDepth = 6
+		self.depthList = {x: 0 for x in range(5)}
 		self.stateList = {}
 		self.captures = 0
 
@@ -26,13 +27,27 @@ class AI:
 	
 	def getTotalMoves(self, depth :int, board :Board, m=None, moveList :list[str]=[]):
 		if m == None:
-			print(m)
 			m = depth
 
 		if depth == 0:
 			return 1
 
-		allMoves = board.getAllMoves()
+		try:
+			allMoves = board.getAllMoves()
+
+		# if len(allMoves) == 0:
+		# 	print(allMoves)
+		# 	print("I LIKE FAT COCK")
+		# 	return 1
+		except Exception as e:
+			print(e)
+			print(e.args)
+			# print(e.with_traceback())
+			print(board.fen.getFenString(board.board), depth)
+			for move in board.moveHistory:
+				print(move)
+			return 1
+
 		# allMoves.sort(key= lambda x: self.heirarchy[x.pieceMoved[1]])
 		numPositions = 0
 
@@ -45,8 +60,8 @@ class AI:
 			# print((m-depth)*"\t" + chessMove)
 			oneStepDeep = self.getTotalMoves(depth-1, board, m, moveList)
 
-			if depth == m:
-				print(f"{chessMove}: {oneStepDeep}")
+			
+			fkjhadsljfhasdkjlfh = print(f"{move}: {oneStepDeep}") if (depth == m and depth != 1) else None
 
 			numPositions += oneStepDeep
 			# print(f"{m}\t{numPositions}", end="\r")
@@ -67,8 +82,6 @@ class AI:
 		bestMove = None
 		bestEval = -(2**31)
 
-		self.depthList[self.maxDepth] += len(allMoves)
-
 		for move in allMoves:
 			board.makeMove(move)
 
@@ -84,15 +97,12 @@ class AI:
 	def search(self, depth, board :Board) -> int:
 		allMoves = board.getAllMoves()
 
-		self.depthList[depth] += len(allMoves)
-
 		if depth == 0:
 			return board.evalBoard()		
 
-		kingPositions = board.getKingPos()
-		index = 0 if board.fen.colorToMove == "w" else 1
+		kingPos = board.kingMap[board.fen.colorToMove]
 		
-		if board.isSquareCovered(*kingPositions[index], board.fen.colorToMove):
+		if board.isSquareCovered(*kingPos, board.fen.colorToMove):
 			return -(2**31)
 
 		eval = -(2**31)

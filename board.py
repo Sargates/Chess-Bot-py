@@ -62,11 +62,17 @@ class Board:
 		self.loadImages()
 		
 		self.fen = Fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
-
-		# self.fen = Fen("8/4npk1/5p1p/1Q5P/1p4P1/4r3/7q/3K1R2 w - - 1 49")
-		# self.fen = Fen("84npk15p1p3r3P1p4P13Q3q3K45R2 b - - 6 51")
+		# self.fen = Fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 0")
+		# self.fen = Fen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 0")
+		# self.fen = Fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1")
 		# self.fen = Fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8")
+		# self.fen = Fen("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10")
+
 		
+		
+
+		self.aiInProgress = False
+
 
 		self.board = self.fen.boardParse()
 
@@ -78,8 +84,30 @@ class Board:
 			'Q': self.getQueenMoves, 
 			'K': self.getKingMoves,
 		}
+		
+		whitePos, blackPos = -1, -1
+		for row in range(len(self.board)):
+			for col in range(len(self.board[row])):
+				if self.board[row][col][1] == "K":
+					if self.board[row][col][0] == "w":
+						self.whiteKingPos = (col, row)
+						continue
+					self.blackKingPos = (col, row)
+				if whitePos != -1 and blackPos != -1:
+					break				
+			if whitePos != -1 and blackPos != -1:
+				break
+
+
+		self.kingMap = {
+			"w": self.whiteKingPos,
+			"b": self.blackKingPos
+		}
 
 		self.waitingOnPromotion = False
+
+		self.selectedIndex = None
+		self.selectedMoves = []
 
 
 		self.rookPromotion 		= Box(pygame.Rect(688, 114, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False)
@@ -89,8 +117,8 @@ class Board:
 
 		self.promotionDict = {
 			'R': self.rookPromotion,
-			'N': self.bishopPromotion,
-			'B': self.knightPromotion,
+			'B': self.bishopPromotion,
+			'N': self.knightPromotion,
 			'Q': self.queenPromotion
 		}
 
@@ -102,10 +130,6 @@ class Board:
 		if type(move) == Promotion:
 			# print("big cum 2")
 			self.waitingOnPromotion = True
-			RenderPipeline.addAsset(self.rookPromotion)
-			RenderPipeline.addAsset(self.bishopPromotion)
-			RenderPipeline.addAsset(self.knightPromotion)
-			RenderPipeline.addAsset(self.queenPromotion)
 
 			self.rookPromotion.image = self.images[self.idToIndex[move.pieceMoved[0] + "R"]]
 			self.bishopPromotion.image = self.images[self.idToIndex[move.pieceMoved[0] + "B"]]
@@ -148,22 +172,9 @@ class Board:
 						
 
 		self.fen.refreshCastling()
-
-	def getKingPos(self):
-		whitePos, blackPos = -1, -1
-		for row in range(len(self.board)):
-			for col in range(len(self.board[row])):
-				if self.board[row][col][1] == "K":
-					if self.board[row][col][0] == "w":
-						whitePos = (col, row)
-						continue
-					blackPos = (col, row)
-		
-		return (whitePos, blackPos)
 	
 	def removeInvalidMoves(self, moves :list[Move], kingInfo):
 		inCheck, pins, checks, kingPos = kingInfo
-		king = self.getSpace(*kingPos)
 		if not inCheck:
 			return
 
@@ -203,12 +214,8 @@ class Board:
 			moves = []
 
 	def getPieceMoves(self, i, j, directions, moveDepths):
-
-
-		# print(i, j)
 		color = self.getSpace(i, j)[0]
-		kingPositions = self.getKingPos()
-		pos = kingPositions[0] if color == "w" else kingPositions[1]
+		pos = self.kingMap[color]
 
 		inCheck, pins, checks = self.isSquareCovered(*pos, color)
 		piecePinned = False
@@ -258,8 +265,7 @@ class Board:
 	def getPawnMoves(self, i, j):
 		space = self.getSpace(i, j)
 		color = space[0]
-		kingPositions = self.getKingPos()
-		kingPos = kingPositions[0] if color == "w" else kingPositions[1]
+		kingPos = self.kingMap[color]
 
 		inCheck, pins, checks = self.isSquareCovered(*kingPos, color)
 		piecePinned = False
@@ -291,7 +297,6 @@ class Board:
 			endSpace = self.getSpace(*endPos)
 			possiblePromotion = Move(self, space, endSpace, (i, j), endPos)
 			if endPos[1] == int(3.5 + (3.5 * forwardOne[1])):
-				self.waitingOnPromotion = True
 				availableMoves.append(Promotion(possiblePromotion, "R"))
 				availableMoves.append(Promotion(possiblePromotion, "B"))
 				availableMoves.append(Promotion(possiblePromotion, "N"))
@@ -314,7 +319,6 @@ class Board:
 			if endSpace != "--" and endSpace[0] != color:
 				possiblePromotion = Move(self, space, endSpace, (i, j), endPos)
 				if endPos[1] == int(3.5 + (3.5 * forwardOne[1])):
-					self.waitingOnPromotion = True
 					availableMoves.append(Promotion(possiblePromotion, "R"))
 					availableMoves.append(Promotion(possiblePromotion, "B"))
 					availableMoves.append(Promotion(possiblePromotion, "N"))
@@ -332,7 +336,6 @@ class Board:
 			if endSpace != "--" and endSpace[0] != color:
 				possiblePromotion = Move(self, space, endSpace, (i, j), endPos)
 				if endPos[1] == int(3.5 + (3.5 * forwardOne[1])):
-					self.waitingOnPromotion = True
 					availableMoves.append(Promotion(possiblePromotion, "R"))
 					availableMoves.append(Promotion(possiblePromotion, "B"))
 					availableMoves.append(Promotion(possiblePromotion, "N"))
@@ -344,7 +347,15 @@ class Board:
 				endSpace = self.getSpace(endPos[0], endPos[1] - forwardK[1])
 				availableMoves.append(EnPassant(self, space, endSpace, (i, j), endPos))
 		
-		self.removeInvalidMoves(availableMoves, (inCheck, pins, checks, kingPos))
+		for i in range(len(availableMoves)-1, -1, -1):
+			testedMove = availableMoves[i]
+
+			self.makeMove(testedMove)
+
+			if self.isSquareCovered(*self.kingMap[color], color)[0]:
+				availableMoves.pop(i)
+			
+			self.undoMove()
 		
 		return availableMoves
 	def getKnightMoves(self, x, y):
@@ -367,6 +378,11 @@ class Board:
 		directions = [(-1, 0), (0, 1), (1, 0), (0, -1), (-1, -1), (1, -1), (-1, 1), (1, 1)]
 
 		return self.getPieceMoves(x, y, directions, moveDepths)
+	
+	# def isMoveValid(self, move :Move):
+	# 	move.makeMove()
+	# 	# self.whiteKing
+	# 	inCheck = 
 
 	def isSquareCovered(self, x1, y1, color) -> tuple[bool, tuple, tuple]: 
 		pins = []
@@ -479,14 +495,21 @@ class Board:
 		castle = self.fen.castling
 
 		
-		castleToInterval = {
+		unCheckableSpaces = {
 			"q": [(2,0), (3,0)],
 			"k": [(5,0), (6,0)],
 			"Q": [(2,7) ,(3,7)],
 			"K": [(5,7), (6,7)]
 		}
 
-		castlingDict = {
+		clearSpaces = {
+			"q": [(1, 0), (2,0), (3,0)],
+			"k": [(5,0), (6,0)],
+			"Q": [(1, 7), (2,7) ,(3,7)],
+			"K": [(5,7), (6,7)]
+		}
+
+		rookKingPos = {
 			"q": ((4,0), (0,0)),
 			"k": ((4,0), (7,0)),
 			"Q": ((4,7), (0,7)),
@@ -498,22 +521,30 @@ class Board:
 
 		if castle == ["-"]:
 			return availableMoves
-		
 
-		for char in castle:
-			interval = castleToInterval[char]
+		if color == "b":
+			if not self.isSquareCovered(*unCheckableSpaces['q'][0], color)[0] and not self.isSquareCovered(*unCheckableSpaces['q'][1], color)[0] and \
+				self.getSpace(*clearSpaces['q'][0]) == "--" and self.getSpace(*clearSpaces['q'][1]) == "--" and self.getSpace(*clearSpaces['q'][2]) == "--" and \
+				self.getSpace(*rookKingPos['q'][0])[1] == "K" and self.getSpace(*rookKingPos['q'][1])[1] == "R" and ('q' in self.fen.castling):
+					availableMoves.append(Castle(self, startSpace, self.getSpace(*rookKingPos['q'][1]), rookKingPos['q'][0], rookKingPos['q'][1]))
 
-			for square in interval:
-				if self.getSpace(*square) != "--":
-					break
-				coverInfo = self.isSquareCovered(*square, color)
-				if coverInfo[0]:
-					break
-			else:
-				pos = castlingDict[char]
-				if not (i, j) == pos[0]:
-					continue
-				availableMoves.append(Castle(self, startSpace, self.getSpace(*pos[1]), pos[0], pos[1]))
+			if not self.isSquareCovered(*unCheckableSpaces['k'][0], color)[0] and not self.isSquareCovered(*unCheckableSpaces['k'][1], color)[0] and \
+				self.getSpace(*clearSpaces['k'][0]) == "--" and self.getSpace(*clearSpaces['k'][1]) == "--" and \
+				self.getSpace(*rookKingPos['k'][0])[1] == "K" and self.getSpace(*rookKingPos['k'][1])[1] == "R" and ('k' in self.fen.castling):
+					availableMoves.append(Castle(self, startSpace, self.getSpace(*rookKingPos['k'][1]), rookKingPos['k'][0], rookKingPos['k'][1]))
+
+		if color == "w":
+			if not self.isSquareCovered(*unCheckableSpaces['Q'][0], color)[0] and not self.isSquareCovered(*unCheckableSpaces['Q'][1], color)[0] and \
+				self.getSpace(*clearSpaces['Q'][0]) == "--" and self.getSpace(*clearSpaces['Q'][1]) == "--" and self.getSpace(*clearSpaces['Q'][2]) == "--" and \
+				self.getSpace(*rookKingPos['Q'][0])[1] == "K" and self.getSpace(*rookKingPos['Q'][1])[1] == "R" and ('Q' in self.fen.castling):
+					availableMoves.append(Castle(self, startSpace, self.getSpace(*rookKingPos['Q'][1]), rookKingPos['Q'][0], rookKingPos['Q'][1]))
+
+			if not self.isSquareCovered(*unCheckableSpaces['K'][0], color)[0] and not self.isSquareCovered(*unCheckableSpaces['K'][1], color)[0] and \
+				self.getSpace(*clearSpaces['K'][0]) == "--" and self.getSpace(*clearSpaces['K'][1]) == "--" and \
+				self.getSpace(*rookKingPos['K'][0])[1] == "K" and self.getSpace(*rookKingPos['K'][1])[1] == "R" and ('K' in self.fen.castling):
+					availableMoves.append(Castle(self, startSpace, self.getSpace(*rookKingPos['K'][1]), rookKingPos['K'][0], rookKingPos['K'][1]))	
+
+
 
 
 		return availableMoves
@@ -521,11 +552,18 @@ class Board:
 	def getAllMoves(self) -> list[Move]:
 		color = self.fen.colorToMove
 		totalMoves = []
+		kingPos = (-1, -1)
 
 		for i in range(8):
 			for j in range(8):
 				if self.board[i][j][0] == color:
+					if self.board[i][j][1] == "K":
+						kingPos = (j, i)
+
 					totalMoves.extend(self.moveFunctions[self.board[i][j][1]](j, i))
+		
+		# kingInfo = self.isSquareCovered(*kingPos, color) + (kingPos,)
+		# self.removeInvalidMoves(totalMoves, kingInfo)
 		
 		return totalMoves
 
@@ -549,7 +587,8 @@ class Board:
 	def makeMove(self, move :Move):
 		self.fen.switchTurns(self.board)
 		move.makeMove()
-		self.checkForPromotion(move)
+		if move.pieceMoved[1] == "K":
+			self.kingMap[move.pieceMoved[0]] = move.endPos
 		self.checkForEnPassant(move)
 		self.checkCastling(move)
 		# self.checkForCheckmate()
@@ -558,6 +597,9 @@ class Board:
 	def undoMove(self):
 		move = self.moveHistory.pop(-1)
 		move.undo()
+
+		if move.pieceMoved[1] == "K":
+			self.kingMap[move.pieceMoved[0]] = move.startPos
 		if type(move) == Promotion:
 			self.waitingOnPromotion = False
 
@@ -587,15 +629,58 @@ class Board:
 				return
 
 			tempMove = Move(self, space, self.getSpace(*index), self.selectedIndex, index)
+			tempMoveInSelectedMoves = False
 
+			# for selectedMove in self.selectedMoves:
+			# 	if tempMove == selectedMove:
+			# 		tempMoveInSelectedMoves = True
+			# 	if type(selectedMove) == Promotion:
+			# 		self.waitingOnPromotion = True
+			# 		# return
+
+			# if self.waitingOnPromotion:
+			# 	RenderPipeline.addAsset(self.rookPromotion)
+			# 	RenderPipeline.addAsset(self.bishopPromotion)
+			# 	RenderPipeline.addAsset(self.knightPromotion)
+			# 	RenderPipeline.addAsset(self.queenPromotion)
+			# 	return
+			
 			if tempMove in self.selectedMoves: # if index in in avialable moves
-				move = self.selectedMoves[self.selectedMoves.index(tempMove)]
+				moveIndex = self.selectedMoves.index(tempMove)
+				move = self.selectedMoves[moveIndex]
 				if space[1] == "p":
 					self.fen.halfMoveCount = 0
 				else:
 					self.fen.halfMoveCount += 1
 
-				self.makeMove(move)
+				if type(move) == Promotion:
+					self.waitingOnPromotion = True
+
+					self.rookPromotion.setAction(self.makeMove)
+					self.rookPromotion.setArgs((self.selectedMoves[moveIndex+0], ))
+					self.rookPromotion.setImage(self.images[self.idToIndex[space[0] + "R"]])
+
+					self.bishopPromotion.setAction(self.makeMove)
+					self.bishopPromotion.setArgs((self.selectedMoves[moveIndex+1], ))
+					self.bishopPromotion.setImage(self.images[self.idToIndex[space[0] + "B"]])
+
+					self.knightPromotion.setAction(self.makeMove)
+					self.knightPromotion.setArgs((self.selectedMoves[moveIndex+2], ))
+					self.knightPromotion.setImage(self.images[self.idToIndex[space[0] + "N"]])
+
+					self.queenPromotion.setAction(self.makeMove)
+					self.queenPromotion.setArgs((self.selectedMoves[moveIndex+3], ))
+					self.queenPromotion.setImage(self.images[self.idToIndex[space[0] + "Q"]])
+
+					RenderPipeline.addAsset(self.rookPromotion)
+					RenderPipeline.addAsset(self.bishopPromotion)
+					RenderPipeline.addAsset(self.knightPromotion)
+					RenderPipeline.addAsset(self.queenPromotion)
+
+
+
+				else:
+					self.makeMove(move)
 				self.fen.future = []
 
 				# for move in self.selectedMoves:

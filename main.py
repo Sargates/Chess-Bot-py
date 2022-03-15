@@ -43,7 +43,7 @@ def renderBoard(b :Board):
 	SCREEN.blit(pygame.transform.scale(b.boardImage, (HEIGHT, HEIGHT)), ((WIDTH/2)-(HEIGHT/2), 0))
 
 def renderPieces(b :Board):
-	if b.waitingOnPromotion:
+	if b.aiInProgress:
 		return
 
 	for i in range(len(b.board)):
@@ -159,14 +159,14 @@ def main():
 			if e.type == pygame.KEYDOWN:
 				if e.key == pygame.K_z and len(board.moveHistory) > 0:
 					board.undoMove()
-					# board.undoMove()
+					board.undoMove()
 
 					board.fen.refreshBoard(board.board)
 				elif e.key == pygame.K_y and len(board.moveFuture) > 0:
 					board.makeMove(board.moveFuture.pop(-1))
+					board.makeMove(board.moveFuture.pop(-1))
 					board.fen.redo()
-					# board.makeMove(board.moveFuture.pop(-1))
-					# board.fen.redo()
+					board.fen.redo()
 
 					board.fen.refreshBoard(board.board)
 				elif e.key == pygame.K_v:
@@ -175,17 +175,23 @@ def main():
 
 					}
 
-					# print()
+					print()
+
+					# RenderPipeline.printMessages = False
 					# for k, v in ai.depthList.items():
 					# 	moveLists[k] = []
 					# 	ai.depthList[k] = ai.getTotalMoves(k, board, k, moveLists[k])
 					# 	print(f"{k}\t{ai.depthList[k]}")
 
-					for asset in RenderPipeline.pipeline:
-						print(asset)
 
-					for method in RenderPipeline.methods:
-						print(method)
+					# for asset in RenderPipeline.pipeline:
+					# 	print(asset)
+
+					# for method in RenderPipeline.methods:
+					# 	print(method)
+					
+					# RenderPipeline.printMessages = True
+
 
 					# print(ai.captures)
 
@@ -209,9 +215,12 @@ def main():
 			print(f"matchDraw = {board.matchDraw}")
 			continue
 
-		# if board.fen.colorToMove == "b" and not (board.checkMate or board.matchDraw):
-		# 	aiMove = ai.getMove(board)
-		# 	board.makeMove(aiMove)
+		if board.fen.colorToMove == "b" and not (board.checkMate or board.matchDraw):
+			board.aiInProgress = True
+			aiMove = ai.getMove(board)
+			board.aiInProgress = False
+
+			board.makeMove(aiMove)
 
 		# render(board)
 			
