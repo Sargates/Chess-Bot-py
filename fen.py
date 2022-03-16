@@ -92,26 +92,25 @@ class Fen:
 
 	def boardParse(self):
 		ranks = self.board.split("/")
-		board = [["--" for x in range(8)] for k in range(8)]
+		board = ["--" for x in range(64)]
 		i=0
 		for y in range(len(ranks)):
 			for symbol in ranks[y]:
 				if symbol.isdigit():
 					i += int(symbol)
 					continue
-				board[i//8][i%8] = self.pieceDict[symbol]
+				board[i] = self.pieceDict[symbol]
 				i += 1
 		
 		return board
 	
 	def refreshBoard(self, board):
 		boardString = ""
-
 		t = 0
-
-		for j in range(8):
-			for i in range(8):
-				if board[j][i] == "--":
+		for i in range(8):
+			for j in range(8):
+				pos = i * 8 + j
+				if board[pos] == "--":
 					t += 1
 					continue
 				
@@ -119,16 +118,16 @@ class Fen:
 					boardString += str(t)
 					t = 0
 
-				if board[j][i][0] == "b":
-					boardString += board[j][i][1].lower()
+				if board[pos][0] == "b":
+					boardString += board[pos][1].lower()
 				else:
-					boardString += board[j][i][1].upper()
+					boardString += board[pos][1].upper()
 
 			if t != 0:
 				boardString += str(t)
 
 			t = 0
-			if i == 7 and j != 7:
+			if i != 7:
 				boardString += "/"
 		
 		self.board = boardString

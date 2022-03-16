@@ -161,6 +161,10 @@ def main():
 
 					print()
 
+					moveLists = {
+
+					}
+
 					
 
 					# RenderPipeline.printMessages = False
@@ -170,6 +174,11 @@ def main():
 					# 	print(f"{k}\t{ai.depthList[k]}")
 
 					print()
+
+					aiMove = ai.getMove(board)
+
+					board.makeMove(aiMove)
+					board.resetPublicBoard()
 					# for string in board.fen.history:
 					# 	print(string)
 					# print()
@@ -190,6 +199,7 @@ def main():
 			# print(board.publicBoard == board.board)
 			# board.publicBoard = board.board.copy()
 			board.resetPublicBoard()
+			print("done")
 
 		
 

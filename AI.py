@@ -32,21 +32,9 @@ class AI:
 		if depth == 0:
 			return 1
 
-		try:
-			allMoves = board.getAllMoves()
 
-		# if len(allMoves) == 0:
-		# 	print(allMoves)
-		# 	print("I LIKE FAT COCK")
-		# 	return 1
-		except Exception as e:
-			print(e)
-			print(e.args)
-			# print(e.with_traceback())
-			print(board.fen.getFenString(board.board), depth)
-			for move in board.moveHistory:
-				print(move)
-			return 1
+		allMoves = board.getAllMoves()
+
 
 		# allMoves.sort(key= lambda x: self.heirarchy[x.pieceMoved[1]])
 		numPositions = 0
@@ -80,11 +68,14 @@ class AI:
 		bestEval = -(2**31)
 
 		kingPos = board.kingMap[board.fen.colorToMove]
+		print(len(allMoves))
 
 		for move in allMoves:
 			board.makeMove(move)
 
 			iterEval = -self.search(self.maxDepth, board)
+			# print(f"{move}: {1}, {iterEval}")
+
 			if bestEval < iterEval:
 				bestEval = iterEval
 				bestMove = move
@@ -95,15 +86,20 @@ class AI:
 		return bestMove
 	
 	def search(self, depth, board :Board) -> int:
+		if depth == 0:
+			return board.evalBoard()
 		allMoves = board.getAllMoves()
 
-		if depth == 0:
-			return board.evalBoard()		
+		if len(allMoves) == 0:
+			return -(2**31)
 
+	
 		kingPos = board.kingMap[board.fen.colorToMove]
 		
 		if board.isSquareCovered(*kingPos, board.fen.colorToMove)[0]:
-			return -(2**31)
+			return -(2**31)+1
+
+
 
 		eval = -(2**31)
 
@@ -111,8 +107,9 @@ class AI:
 			board.makeMove(move)
 
 			eval = max(eval, -self.search(depth-1, board))
-			print(f"{move}\t{eval}", end="\n")
-
+			# print(f"{move}\t{eval}", end="\n")
+			tabDepth = (self.maxDepth-depth)*'\t'
+			# print(f"{tabDepth}{move}: {self.maxDepth-depth+1}, {eval}")
 
 			board.undoMove()
 
