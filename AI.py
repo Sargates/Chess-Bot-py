@@ -17,7 +17,7 @@ class AI:
 
 	def __init__(self) -> None:
 		self.totalMoves = 0
-		self.maxDepth = 6
+		self.maxDepth = 2
 		self.depthList = {x: 0 for x in range(5)}
 		self.stateList = {}
 		self.captures = 0
@@ -71,9 +71,6 @@ class AI:
 
 
 		return numPositions
-		
-
-		
 
 	def getMove(self, board :Board) -> Move:
 		self.totalMoves = 0
@@ -82,6 +79,8 @@ class AI:
 		bestMove = None
 		bestEval = -(2**31)
 
+		kingPos = board.kingMap[board.fen.colorToMove]
+
 		for move in allMoves:
 			board.makeMove(move)
 
@@ -89,6 +88,7 @@ class AI:
 			if bestEval < iterEval:
 				bestEval = iterEval
 				bestMove = move
+				
 
 			board.undoMove()
 		
@@ -102,7 +102,7 @@ class AI:
 
 		kingPos = board.kingMap[board.fen.colorToMove]
 		
-		if board.isSquareCovered(*kingPos, board.fen.colorToMove):
+		if board.isSquareCovered(*kingPos, board.fen.colorToMove)[0]:
 			return -(2**31)
 
 		eval = -(2**31)
@@ -111,6 +111,8 @@ class AI:
 			board.makeMove(move)
 
 			eval = max(eval, -self.search(depth-1, board))
+			print(f"{move}\t{eval}", end="\n")
+
 
 			board.undoMove()
 

@@ -1,3 +1,4 @@
+from re import A
 import pygame, os
 from move   import *
 from fen import Fen
@@ -61,12 +62,16 @@ class Board:
 	def __init__(self, ):
 		self.loadImages()
 		
-		self.fen = Fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+		# self.fen = Fen("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
 		# self.fen = Fen("r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq - 0 0")
 		# self.fen = Fen("8/2p5/3p4/KP5r/1R3p1k/8/4P1P1/8 w - - 0 0")
-		# self.fen = Fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1")
+		self.fen = Fen("r3k2r/Pppp1ppp/1b3nbN/nP6/BBP1P3/q4N2/Pp1P2PP/R2Q1RK1 w kq - 0 1")
 		# self.fen = Fen("rnbq1k1r/pp1Pbppp/2p5/8/2B5/8/PPP1NnPP/RNBQK2R w KQ - 1 8")
 		# self.fen = Fen("r4rk1/1pp1qppp/p1np1n2/2b1p1B1/2B1P1b1/P1NP1N2/1PP1QPPP/R4RK1 w - - 0 10")
+
+
+		# self.fen = Fen("rnbqkbnr/pppppPpp/8/8/8/8/PPPPP1PP/RNBQKBNR w KQkq - 0 1")
+
 
 		
 		
@@ -75,6 +80,8 @@ class Board:
 
 
 		self.board = self.fen.boardParse()
+		self.resetPublicBoard()
+		
 
 		self.moveFunctions = {
 			'p': self.getPawnMoves, 
@@ -110,10 +117,10 @@ class Board:
 		self.selectedMoves = []
 
 
-		self.rookPromotion 		= Box(pygame.Rect(688, 114, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False)
-		self.bishopPromotion 	= Box(pygame.Rect(688, 174, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False)
-		self.knightPromotion 	= Box(pygame.Rect(688, 234, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False)
-		self.queenPromotion 	= Box(pygame.Rect(688, 294, 60, 60), color=pygame.Color(0, 0, 0, 0), isDraggable=False)
+		self.rookPromotion 		= Box(pygame.Rect(688, 114, 60, 60), color=pygame.Color(0, 0, 0, 255), isDraggable=False)
+		self.bishopPromotion 	= Box(pygame.Rect(688, 174, 60, 60), color=pygame.Color(0, 0, 0, 255), isDraggable=False)
+		self.knightPromotion 	= Box(pygame.Rect(688, 234, 60, 60), color=pygame.Color(0, 0, 0, 255), isDraggable=False)
+		self.queenPromotion 	= Box(pygame.Rect(688, 294, 60, 60), color=pygame.Color(0, 0, 0, 255), isDraggable=False)
 
 		self.promotionDict = {
 			'R': self.rookPromotion,
@@ -124,6 +131,13 @@ class Board:
 
 	def reset(self, ):
 		pass
+
+	def resetPublicBoard(self):
+		self.publicBoard = [["" for x in range(8)]for x in range(8)]
+
+		for i in range(8):
+			for j in range(8):
+				self.publicBoard[i][j] = self.board[i][j]
 
 	def checkForPromotion(self, move :Move):
 		# print("big cum")
@@ -290,6 +304,8 @@ class Board:
 		forwardTwo = (direction[0], direction[1] * 2)
 		forwardQ = (direction[0]-1, direction[1])
 		forwardK = (direction[0]+1, direction[1])
+
+		enPassantIndex = -1
 		
 
 		endPos = (i + forwardOne[0], j + forwardOne[1])
@@ -329,6 +345,7 @@ class Board:
 			if (endPos[0], endPos[1] - forwardQ[1]) == self.fen.getEnPassantPos():
 				endSpace = self.getSpace(endPos[0], endPos[1] - forwardQ[1])
 				availableMoves.append(EnPassant(self, space, endSpace, (i, j), endPos))
+				enPassantIndex = len(availableMoves)-1
 
 		endPos = (i + forwardK[0], j + forwardK[1])
 		if not (piecePinned and forwardK != pinDirection) and 0 <= endPos[0] < 8 and 0 <= endPos[1] < 8:
@@ -346,16 +363,29 @@ class Board:
 			if (endPos[0], endPos[1] - forwardK[1]) == self.fen.getEnPassantPos():
 				endSpace = self.getSpace(endPos[0], endPos[1] - forwardK[1])
 				availableMoves.append(EnPassant(self, space, endSpace, (i, j), endPos))
+				enPassantIndex = len(availableMoves)-1
 		
-		for i in range(len(availableMoves)-1, -1, -1):
-			testedMove = availableMoves[i]
+		# for i in range(len(availableMoves)-1, -1, -1):
+		# 	testedMove = availableMoves[i]
 
-			self.makeMove(testedMove)
+		# 	self.makeMove(testedMove)
+
+		# 	if self.isSquareCovered(*self.kingMap[color], color)[0]:
+		# 		availableMoves.pop(i)
+			
+		# 	self.undoMove()
+		self.removeInvalidMoves(availableMoves, self.isSquareCovered(*self.kingMap[color], color) + (self.kingMap[color],))
+
+		# test enPassantMove
+		if enPassantIndex != -1:
+			enPassantMove = availableMoves[enPassantIndex]
+
+			enPassantMove.makeMove()
 
 			if self.isSquareCovered(*self.kingMap[color], color)[0]:
-				availableMoves.pop(i)
+				availableMoves.pop(enPassantIndex)
 			
-			self.undoMove()
+			enPassantMove.undo()
 		
 		return availableMoves
 	def getKnightMoves(self, x, y):
@@ -552,13 +582,10 @@ class Board:
 	def getAllMoves(self) -> list[Move]:
 		color = self.fen.colorToMove
 		totalMoves = []
-		kingPos = (-1, -1)
 
 		for i in range(8):
 			for j in range(8):
 				if self.board[i][j][0] == color:
-					if self.board[i][j][1] == "K":
-						kingPos = (j, i)
 
 					totalMoves.extend(self.moveFunctions[self.board[i][j][1]](j, i))
 		
@@ -690,7 +717,9 @@ class Board:
 				self.selectedMoves = []
 
 				self.moveFuture = []
+				self.resetPublicBoard()
 				# print(self.fen.getFenString(self.board), "\n")
+
 				return
 
 			if self.getSpace(*index) == "--": # selected index is not a piece

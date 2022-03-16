@@ -43,12 +43,12 @@ def renderBoard(b :Board):
 	SCREEN.blit(pygame.transform.scale(b.boardImage, (HEIGHT, HEIGHT)), ((WIDTH/2)-(HEIGHT/2), 0))
 
 def renderPieces(b :Board):
-	if b.aiInProgress:
-		return
+	# if b.aiInProgress:
+	# 	return
 
-	for i in range(len(b.board)):
-		for j in range(len(b.board[i])):
-			space = b.board[i][j]
+	for i in range(len(b.publicBoard)):
+		for j in range(len(b.publicBoard[i])):
+			space = b.publicBoard[i][j]
 			# print(j, i, "", space)
 			if space != "--":
 				xPosition = j
@@ -97,7 +97,7 @@ def main():
 
 
 	run = True
-	checkmatePrinting = False
+	RenderPipeline.printMessages = False
 
 	RenderPipeline.setScreen(SCREEN)
 	RenderPipeline.addMethod(renderBoard, board)
@@ -108,18 +108,6 @@ def main():
 
 	renderThread = threading.Thread(target=render, args=(board,), name="Render Thread")
 	renderThread.start()
-
-	# RenderPipeline.addAsset(Box(pygame.Rect(688, 114, 40, 40), color=pygame.Color(255, 0, 0), isDraggable=False, action=RenderPipeline.removeMethod, args=(renderBoard,)))
-	# RenderPipeline.addAsset(Box(pygame.Rect(688, 164, 40, 40), color=pygame.Color(255, 0, 0), isDraggable=False, action=RenderPipeline.removeMethod, args=(renderHighlighted,)))
-	# RenderPipeline.addAsset(Box(pygame.Rect(688, 214, 40, 40), color=pygame.Color(255, 0, 0), isDraggable=False, action=RenderPipeline.removeMethod, args=(renderSelected,)))
-	# RenderPipeline.addAsset(Box(pygame.Rect(688, 264, 40, 40), color=pygame.Color(255, 0, 0), isDraggable=False, action=RenderPipeline.removeMethod, args=(renderPieces,)))
-	# RenderPipeline.addAsset(Box(pygame.Rect(688, 314, 40, 40), color=pygame.Color(255, 0, 0), isDraggable=False, action=RenderPipeline.removeMethod, args=(renderMoves,)))
-
-	# RenderPipeline.addAsset(Box(pygame.Rect(688, 414, 40, 40), color=pygame.Color(0, 255, 0), isDraggable=False, action=RenderPipeline.addMethod, args=(renderBoard, 		board)))
-	# RenderPipeline.addAsset(Box(pygame.Rect(688, 464, 40, 40), color=pygame.Color(0, 255, 0), isDraggable=False, action=RenderPipeline.addMethod, args=(renderHighlighted, 	board)))
-	# RenderPipeline.addAsset(Box(pygame.Rect(688, 514, 40, 40), color=pygame.Color(0, 255, 0), isDraggable=False, action=RenderPipeline.addMethod, args=(renderSelected, 	board)))
-	# RenderPipeline.addAsset(Box(pygame.Rect(688, 564, 40, 40), color=pygame.Color(0, 255, 0), isDraggable=False, action=RenderPipeline.addMethod, args=(renderPieces, 		board)))
-	# RenderPipeline.addAsset(Box(pygame.Rect(688, 614, 40, 40), color=pygame.Color(0, 255, 0), isDraggable=False, action=RenderPipeline.addMethod, args=(renderMoves, 		board)))
 
 	while run:
 		mousePos = pygame.mouse.get_pos()
@@ -140,14 +128,9 @@ def main():
 					if e.button == 1: # left click
 						board.highlightedSquares = set()
 						board.selectionLogic(index)
+						# board.publicBoard = board.board.copy()
 
-						# print()
 
-						# print(board.selectedIndex)
-						# print(board.selectedIndex)
-
-						# for move in board.selectedMoves:
-						# 	print(move)
 					if e.button == 3: # right click
 						if not index in board.highlightedSquares:
 							board.highlightedSquares.add(index)
@@ -161,7 +144,10 @@ def main():
 					board.undoMove()
 					board.undoMove()
 
+
 					board.fen.refreshBoard(board.board)
+					board.resetPublicBoard()
+
 				elif e.key == pygame.K_y and len(board.moveFuture) > 0:
 					board.makeMove(board.moveFuture.pop(-1))
 					board.makeMove(board.moveFuture.pop(-1))
@@ -169,13 +155,13 @@ def main():
 					board.fen.redo()
 
 					board.fen.refreshBoard(board.board)
-				elif e.key == pygame.K_v:
+					board.resetPublicBoard()
 
-					moveLists = {
-
-					}
+				elif e.key == pygame.K_v: # debug hotkey
 
 					print()
+
+					
 
 					# RenderPipeline.printMessages = False
 					# for k, v in ai.depthList.items():
@@ -183,44 +169,29 @@ def main():
 					# 	ai.depthList[k] = ai.getTotalMoves(k, board, k, moveLists[k])
 					# 	print(f"{k}\t{ai.depthList[k]}")
 
-
-					# for asset in RenderPipeline.pipeline:
-					# 	print(asset)
-
-					# for method in RenderPipeline.methods:
-					# 	print(method)
-					
-					# RenderPipeline.printMessages = True
-
-
-					# print(ai.captures)
-
-					# for m1321321 in moveLists[1]:
-					# 	print(m1321321)
-
 					print()
 					# for string in board.fen.history:
 					# 	print(string)
 					# print()
 
-					# for move in board.selectedMoves:
-					# 	print(move)
-
 					print(f"Current FEN String\n{board.fen.getFenString(board.board)}")
 		
-		if (board.checkMate or board.matchDraw) and not checkmatePrinting:
-			print("Game Over")
-			print("Ending FEN String\n", board.fen.getFenString(board.board))
-			print(f"checkMate = {board.checkMate}")
-			print(f"matchDraw = {board.matchDraw}")
-			continue
+		# if (board.checkMate or board.matchDraw) and not checkmatePrinting:
+		# 	print("Game Over")
+		# 	print("Ending FEN String\n", board.fen.getFenString(board.board))
+		# 	print(f"checkMate = {board.checkMate}")
+		# 	print(f"matchDraw = {board.matchDraw}")
+		# 	continue
 
 		if board.fen.colorToMove == "b" and not (board.checkMate or board.matchDraw):
-			board.aiInProgress = True
 			aiMove = ai.getMove(board)
-			board.aiInProgress = False
 
 			board.makeMove(aiMove)
+			# print(board.publicBoard == board.board)
+			# board.publicBoard = board.board.copy()
+			board.resetPublicBoard()
+
+		
 
 		# render(board)
 			
