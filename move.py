@@ -1,3 +1,4 @@
+from wsgiref.types import StartResponse
 from PygameExtensions import *
 
 class Move:
@@ -22,12 +23,12 @@ class Move:
 		return True
 	
 	def makeMove(self):
-		self.b.board[self.endPos[1]][self.endPos[0]] = self.pieceMoved
-		self.b.board[self.startPos[1]][self.startPos[0]] = "--"
+		self.b.board[self.endPos] = self.pieceMoved
+		self.b.board[self.startPos] = "--"
 
 	def undo(self):
-		self.b.board[self.endPos[1]][self.endPos[0]]   = self.pieceTaken
-		self.b.board[self.startPos[1]][self.startPos[0]] = self.pieceMoved
+		self.b.board[self.endPos]   = self.pieceTaken
+		self.b.board[self.startPos] = self.pieceMoved
 	
 	def redo(self):
 		self.makeMove()
@@ -38,35 +39,35 @@ class Move:
 class EnPassant(Move):
 	def __init__(self, board, startSquare, endSquare, startPos, endPos) -> None:
 		super().__init__(board, startSquare, endSquare, startPos, endPos)
-		self.takenIndex = (endPos[0], endPos[1]-1) if endSquare[0] == "w" else (endPos[0], endPos[1]+1)
+		self.takenIndex = endPos-8 if endSquare[0] == "w" else endPos+8
 		# print(self.takenIndex)
 		
 	def __str__(self) -> str:
 		return f"{self.pieceMoved}, {self.pieceTaken}, {self.startPos}, {self.endPos}, Enpassant"
 
 	def makeMove(self):
-		self.b.board[self.endPos[1]][self.endPos[0]] = self.pieceMoved
-		self.b.board[self.startPos[1]][self.startPos[0]] = "--"
-		self.b.board[self.takenIndex[1]][self.takenIndex[0]] = "--"
+		self.b.board[self.endPos] = self.pieceMoved
+		self.b.board[self.startPos] = "--"
+		self.b.board[self.takenIndex] = "--"
 
 	def undo(self):
-		self.b.board[self.endPos[1]][self.endPos[0]]   = "--"
-		self.b.board[self.startPos[1]][self.startPos[0]] = self.pieceMoved
-		self.b.board[self.takenIndex[1]][self.takenIndex[0]] = self.pieceTaken
+		self.b.board[self.endPos]   = "--"
+		self.b.board[self.startPos] = self.pieceMoved
+		self.b.board[self.takenIndex] = self.pieceTaken
 	
 	def redo(self):
 		self.makeMove()
 
 class Castle():
 	def __init__(self, board, king, rook, kingPos, rookPos) -> None:
-		self.dirVector = (rookPos[0] - kingPos[0]) // abs(rookPos[0] - kingPos[0])
+		self.dirVector = (rookPos - kingPos) // abs(rookPos - kingPos)
 
-		self.kingMove = Move(board, king, "--", kingPos, (kingPos[0] + self.dirVector * 2, kingPos[1]))
-		self.rookMove = Move(board, rook, "--", rookPos, (kingPos[0] + self.dirVector, kingPos[1]))
+		self.kingMove = Move(board, king, "--", kingPos, kingPos + self.dirVector * 2)
+		self.rookMove = Move(board, rook, "--", rookPos, kingPos + self.dirVector)
 		self.pieceMoved = king
 		self.pieceTaken = "--"
 		self.startPos = kingPos
-		self.endPos = (kingPos[0] + self.dirVector * 2, kingPos[1])
+		self.endPos = kingPos + self.dirVector * 2
 
 		# print(self.kingMove, self.rookMove, self.pieceMoved, self.pieceTaken, self.startPos, self.endPos)
 	
@@ -105,9 +106,7 @@ class Promotion():
 	def makeMove(self):
 		self.pawnMove.makeMove()
 
-		i = self.pawnMove.endPos[0]
-		j = self.pawnMove.endPos[1]
-		self.pawnMove.b.board[j][i] = self.pawnMove.b.board[j][i][0] + self.type
+		self.pawnMove.b.board[self.pawnMove.startPos] = self.pawnMove.b.board[self.pawnMove.startPos][0] + self.type
 		self.pawnMove.b.waitingOnPromotion = False
 		
 		RenderPipeline.removeAsset(self.pawnMove.b.promotionDict["R"])
@@ -115,8 +114,6 @@ class Promotion():
 		RenderPipeline.removeAsset(self.pawnMove.b.promotionDict["N"])
 		RenderPipeline.removeAsset(self.pawnMove.b.promotionDict["Q"])
 
-
-	
 	def undo(self):
 		self.pawnMove.undo()
 	

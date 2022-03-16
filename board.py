@@ -1,4 +1,5 @@
 from re import A
+from select import POLLRDHUP
 import pygame, os
 from move   import *
 from fen import Fen
@@ -200,16 +201,16 @@ class Board:
 			check = checks[0]
 			# if crashing come back here
 			# not checking if move is valid
-			direction = (check[2], check[3])
-			endPos = (check[0], check[1])
+			direction = check[1]
+			endPos = check[0]
 			i = 1
 
 
-			while (kingPos[0] + direction[0] * i, kingPos[1] + direction[1] * i) != (endPos[0] + direction[0], endPos[1] + direction[1]):
-				if self.getSpace(*endPos)[1] == "N":
+			while (kingPos + direction * i) != (endPos + direction):
+				if self.getSpace(endPos)[1] == "N":
 					requiredSquares.append(endPos)
 					break
-				requiredSquares.append((kingPos[0] + direction[0] * i, kingPos[1] + direction[1] * i))
+				requiredSquares.append(kingPos + direction * i)
 				i += 1
 			
 			# print(requiredSquares)
@@ -227,11 +228,11 @@ class Board:
 		else:
 			moves = []
 
-	def getPieceMoves(self, i, j, directions, moveDepths):
-		color = self.getSpace(i, j)[0]
+	def getPieceMoves(self, pos, directions, moveDepths):
+		color = self.getSpace(pos)[0]
 		pos = self.kingMap[color]
 
-		inCheck, pins, checks = self.isSquareCovered(*pos, color)
+		inCheck, pins, checks = self.isSquareCovered(pos, color)
 		piecePinned = False
 		availableMoves = []
 
@@ -240,9 +241,9 @@ class Board:
 			# print("STARTING ITER")
 			# print(pins[x])
 			# print(i, j)
-			if pins[x][0] == i and pins[x][1] == j:
+			if pins[x][0] == pos:
 				piecePinned = True
-				pinDirection = (pins[x][2], pins[x][3])
+				pinDirection = (pins[x][1])
 				# print("pin found")
 				# print(pins[x])
 				pins.pop(x)
@@ -255,16 +256,13 @@ class Board:
 				continue
 
 			for depth in moveDepths:
-				if not (0 <= i + direction[0] * depth < 8 and 0 <= j + direction[1] * depth < 8):
+				if not self.isMoveInbounds(pos, direction * depth):
 					break
 
-				endX = direction[0] * depth
-				endY = direction[1] * depth
-
-				startPos = (i, j)
-				endPos = (i + endX, j + endY)
-				startSpace = self.getSpace(*startPos)
-				endSpace = self.getSpace(*endPos)
+				startPos = pos
+				endPos = pos + direction * depth
+				startSpace = self.getSpace(startPos)
+				endSpace = self.getSpace(endPos)
 				if endSpace == "--":
 					availableMoves.append(Move(self, startSpace, endSpace, startPos, endPos))
 					continue
@@ -276,12 +274,12 @@ class Board:
 		self.removeInvalidMoves(availableMoves, (inCheck, pins, checks, pos))
 		
 		return availableMoves
-	def getPawnMoves(self, i, j):
-		space = self.getSpace(i, j)
+	def getPawnMoves(self, pos):
+		space = self.getSpace(pos)
 		color = space[0]
 		kingPos = self.kingMap[color]
 
-		inCheck, pins, checks = self.isSquareCovered(*kingPos, color)
+		inCheck, pins, checks = self.isSquareCovered(kingPos, color)
 		piecePinned = False
 		availableMoves = []
 
@@ -290,28 +288,28 @@ class Board:
 			# print("STARTING ITER")
 			# print(pins[x])
 			# print(i, j)
-			if pins[x][0] == i and pins[x][1] == j:
+			if pins[x] == pos:
 				piecePinned = True
-				pinDirection = (pins[x][2], pins[x][3])
+				pinDirection = (pins[x][1])
 				# print("pin found")
 				# print(pins[x])
 				pins.pop(x)
 				break
 		
-		direction = (0, 1) if color == "b" else (0, -1)
+		direction = 8 if color == "b" else -8
 
 		forwardOne = direction
-		forwardTwo = (direction[0], direction[1] * 2)
-		forwardQ = (direction[0]-1, direction[1])
-		forwardK = (direction[0]+1, direction[1])
+		forwardTwo = direction * 2
+		forwardQ = direction-1
+		forwardK = direction+1
 
 		enPassantIndex = -1
 		
 
-		endPos = (i + forwardOne[0], j + forwardOne[1])
-		if 0 <= endPos[0] < 8 and 0 <= endPos[1] < 8 and self.getSpace(i + forwardOne[0], j + forwardOne[1]) == "--" and not (piecePinned and forwardOne != pinDirection):
-			endSpace = self.getSpace(*endPos)
-			possiblePromotion = Move(self, space, endSpace, (i, j), endPos)
+		endPos = pos + forwardOne
+		if self.isMoveInbounds(pos, forwardOne) and self.getSpace(endPos) == "--" and not (piecePinned and forwardOne != pinDirection):
+			endSpace = self.getSpace(endPos)
+			possiblePromotion = Move(self, space, endSpace, pos, endPos)
 			if endPos[1] == int(3.5 + (3.5 * forwardOne[1])):
 				availableMoves.append(Promotion(possiblePromotion, "R"))
 				availableMoves.append(Promotion(possiblePromotion, "B"))
@@ -322,19 +320,19 @@ class Board:
 
 
 
-		endPos = (i + forwardTwo[0], j + forwardTwo[1])
-		if 0 <= endPos[0] < 8 and 0 <= endPos[1] < 8 and self.getSpace(i + forwardOne[0], j + forwardOne[1]) == "--" and self.getSpace(i + forwardTwo[0], j + forwardTwo[1]) == "--" and not (piecePinned and forwardOne != pinDirection) and j == int(direction[1] * (-2.5) + 3.5):
-			endSpace = self.getSpace(*endPos)
-			availableMoves.append(Move(self, space, endSpace, (i, j), endPos))
+		endPos = pos + forwardTwo
+		if self.isMoveInbounds(pos, forwardOne) and self.getSpace(pos + forwardOne) == "--" and self.getSpace(endPos) == "--" and not (piecePinned and forwardOne != pinDirection) and (pos//8) == int(direction[1] * (-2.5) + 3.5):
+			endSpace = self.getSpace(endPos)
+			availableMoves.append(Move(self, space, endSpace, pos, endPos))
 
 			
 			
-		endPos = (i + forwardQ[0], j + forwardQ[1])
-		if not (piecePinned and forwardQ != pinDirection) and 0 <= endPos[0] < 8 and 0 <= endPos[1] < 8:
-			endSpace = self.getSpace(*endPos)
+		endPos = pos + forwardQ
+		if not (piecePinned and forwardQ != pinDirection) and self.isMoveInbounds(pos, forwardQ):
+			endSpace = self.getSpace(endPos)
 			if endSpace != "--" and endSpace[0] != color:
-				possiblePromotion = Move(self, space, endSpace, (i, j), endPos)
-				if endPos[1] == int(3.5 + (3.5 * forwardOne[1])):
+				possiblePromotion = Move(self, space, endSpace, pos, endPos)
+				if (endPos//8) == int(3.5 + (3.5 * forwardOne // 8)):
 					availableMoves.append(Promotion(possiblePromotion, "R"))
 					availableMoves.append(Promotion(possiblePromotion, "B"))
 					availableMoves.append(Promotion(possiblePromotion, "N"))
@@ -342,17 +340,17 @@ class Board:
 				else:
 					availableMoves.append(possiblePromotion)
 			
-			if (endPos[0], endPos[1] - forwardQ[1]) == self.fen.getEnPassantPos():
-				endSpace = self.getSpace(endPos[0], endPos[1] - forwardQ[1])
-				availableMoves.append(EnPassant(self, space, endSpace, (i, j), endPos))
+			if pos + (forwardQ - forwardOne) == self.fen.getEnPassantPos():
+				endSpace = self.getSpace(pos + (forwardQ - forwardOne))
+				availableMoves.append(EnPassant(self, space, endSpace, pos, endPos))
 				enPassantIndex = len(availableMoves)-1
 
-		endPos = (i + forwardK[0], j + forwardK[1])
-		if not (piecePinned and forwardK != pinDirection) and 0 <= endPos[0] < 8 and 0 <= endPos[1] < 8:
-			endSpace = self.getSpace(*endPos)
+		endPos = pos + forwardK
+		if not (piecePinned and forwardK != pinDirection) and self.isMoveInbounds(pos, forwardK):
+			endSpace = self.getSpace(endPos)
 			if endSpace != "--" and endSpace[0] != color:
-				possiblePromotion = Move(self, space, endSpace, (i, j), endPos)
-				if endPos[1] == int(3.5 + (3.5 * forwardOne[1])):
+				possiblePromotion = Move(self, space, endSpace, pos, endPos)
+				if (endPos//8) == int(3.5 + (3.5 * forwardOne//8)):
 					availableMoves.append(Promotion(possiblePromotion, "R"))
 					availableMoves.append(Promotion(possiblePromotion, "B"))
 					availableMoves.append(Promotion(possiblePromotion, "N"))
@@ -360,9 +358,9 @@ class Board:
 				else:
 					availableMoves.append(possiblePromotion)
 			
-			if (endPos[0], endPos[1] - forwardK[1]) == self.fen.getEnPassantPos():
-				endSpace = self.getSpace(endPos[0], endPos[1] - forwardK[1])
-				availableMoves.append(EnPassant(self, space, endSpace, (i, j), endPos))
+			if pos + (forwardK - forwardOne) == self.fen.getEnPassantPos():
+				endSpace = self.getSpace(pos + (forwardK - forwardOne))
+				availableMoves.append(EnPassant(self, space, endSpace, pos, endPos))
 				enPassantIndex = len(availableMoves)-1
 		
 		# for i in range(len(availableMoves)-1, -1, -1):
@@ -374,7 +372,7 @@ class Board:
 		# 		availableMoves.pop(i)
 			
 		# 	self.undoMove()
-		self.removeInvalidMoves(availableMoves, self.isSquareCovered(*self.kingMap[color], color) + (self.kingMap[color],))
+		self.removeInvalidMoves(availableMoves, self.isSquareCovered(self.kingMap[color], color) + (self.kingMap[color],))
 
 		# test enPassantMove
 		if enPassantIndex != -1:
@@ -382,7 +380,7 @@ class Board:
 
 			enPassantMove.makeMove()
 
-			if self.isSquareCovered(*self.kingMap[color], color)[0]:
+			if self.isSquareCovered(self.kingMap[color], color)[0]:
 				availableMoves.pop(enPassantIndex)
 			
 			enPassantMove.undo()
@@ -409,25 +407,28 @@ class Board:
 
 		return self.getPieceMoves(x, y, directions, moveDepths)
 	
-	# def isMoveValid(self, move :Move):
-	# 	move.makeMove()
-	# 	# self.whiteKing
-	# 	inCheck = 
+	def isMoveInbounds(self, startingPos, direction):
+		sX = startingPos % 8
+		sY = startingPos // 8
+		dX = direction % 8 
+		dY = direction // 8
 
-	def isSquareCovered(self, x1, y1, color) -> tuple[bool, tuple, tuple]: 
+		return (0 <= sX + dX < 8) and (0 <= sY + dY < 8)
+
+	def isSquareCovered(self, pos, color) -> tuple[bool, tuple, tuple]: 
 		pins = []
 		checks = []
 		inCheck = False
 
-		directions = ((0, -1), (1, 0), (0, 1), (-1, 0), (1, 1), (-1, 1), (-1, -1), (1, -1))
+		directions = (-8, 1, 8, -1, 9, 7, -9, -7)
 
 		for j in range(len(directions)):
 			dir = directions[j]
 			possiblePin = ()
 			for i in range(1, 8):
-				testedPos = (x1 + dir[0]*i, y1 + dir[1]*i)
-				if not (0 <= testedPos[0] < 8 and 0 <= testedPos[1] < 8):
+				if not self.isMoveInbounds(pos, dir):
 					break
+				testedPos = pos + dir
 
 				endSpace = self.getSpace(*testedPos)
 
@@ -436,7 +437,7 @@ class Board:
 
 				if endSpace[0] == color and endSpace[1] != 'K':
 					if possiblePin == ():
-						possiblePin = (testedPos[0], testedPos[1], dir[0], dir[1])
+						possiblePin = (testedPos, dir)
 						# print("Possible Pin")
 						# print(possiblePin)
 					else:
@@ -456,7 +457,7 @@ class Board:
 							(type == 'Q') or (i == 1 and type == 'K'):
 						if possiblePin == (): # no piece blocking, so check the king
 							inCheck = True
-							checks.append((testedPos[0], testedPos[1], dir[0], dir[1]))
+							checks.append((testedPos, dir))
 							# print("Check found")
 							# print((testedPos[0], testedPos[1], dir[0], dir[1]))
 
@@ -469,46 +470,42 @@ class Board:
 					else:
 						break
 
-		knightMoves = ((-2, -1), (-2, 1), (-1, -2), (-1, 2), (1, -2), (1, 2), (2,-1), (2, 1))
+		knightMoves = (-10, 6, -17, 15, -15, 17, -6, 10)
 		for m in knightMoves:
-			testedPos = (x1 + m[0], y1 + m[1])
-			if not (0 <= testedPos[0] < 8 and 0 <= testedPos[1] < 8):
+			if not self.isMoveInbounds(pos, m):
 				continue
+			testedPos = pos + m
 
 			endPiece = self.getSpace(*testedPos)
 			if endPiece == "--":
 				continue
 			if endPiece[0] != color and endPiece[1] == "N":
 				inCheck = True
-				checks.append((testedPos[0], testedPos[1], m[0], m[1]))
+				checks.append((testedPos, m))
 					
 		# print("End of pin check")
 
 		return (inCheck, pins, checks)
 
-	def getKingMoves(self, i, j):
+	def getKingMoves(self, pos):
 		moveDepths = [1]
 		directions = [(-1, 0), (0, 1), (1, 0), (0, -1), (-1, -1), (1, -1), (-1, 1), (1, 1)]
 		
 		
 		availableMoves = []
 
-		startPos = (i, j)
-		startSpace = self.getSpace(*startPos)
+		startPos = (pos)
+		startSpace = self.getSpace(startPos)
 		color = startSpace[0]
 
 		for direction in directions:
-			x = direction[0]
-			y = direction[1]
-
-			endPos = (i+x, j+y)
-			# print(endPos)
-
-			if not (0 <= endPos[0] < 8 and 0 <= endPos[1] < 8):
+			if not self.isMoveInbounds(startPos, direction):
 				continue
-			endSpace = self.getSpace(*endPos)
 
-			squareCovered, throw1, throw2 = self.isSquareCovered(*endPos, color)
+			endPos = startPos + direction
+			endSpace = self.getSpace(endPos)
+
+			squareCovered, throw1, throw2 = self.isSquareCovered(endPos, color)
 			# print(squareCovered, throw1, throw2)
 			if squareCovered:
 				continue
@@ -526,53 +523,53 @@ class Board:
 
 		
 		unCheckableSpaces = {
-			"q": [(2,0), (3,0)],
-			"k": [(5,0), (6,0)],
-			"Q": [(2,7) ,(3,7)],
-			"K": [(5,7), (6,7)]
+			"q": (2, 3),
+			"k": (5, 6),
+			"Q": (58, 59),
+			"K": (61, 62)
 		}
 
 		clearSpaces = {
-			"q": [(1, 0), (2,0), (3,0)],
-			"k": [(5,0), (6,0)],
-			"Q": [(1, 7), (2,7) ,(3,7)],
-			"K": [(5,7), (6,7)]
+			"q": (1, 2, 3),
+			"k": (5, 6),
+			"Q": (57, 58, 59),
+			"K": (61, 62)
 		}
 
 		rookKingPos = {
-			"q": ((4,0), (0,0)),
-			"k": ((4,0), (7,0)),
-			"Q": ((4,7), (0,7)),
-			"K": ((4,7), (7,7))
+			"q": (4, 0),
+			"k": (4, 7),
+			"Q": (60, 56),
+			"K": (60, 63)
 		}
 
-		if self.isSquareCovered(i, j, color)[0]:
+		if self.isSquareCovered(pos, color)[0]:
 			return availableMoves
 
 		if castle == ["-"]:
 			return availableMoves
 
 		if color == "b":
-			if not self.isSquareCovered(*unCheckableSpaces['q'][0], color)[0] and not self.isSquareCovered(*unCheckableSpaces['q'][1], color)[0] and \
-				self.getSpace(*clearSpaces['q'][0]) == "--" and self.getSpace(*clearSpaces['q'][1]) == "--" and self.getSpace(*clearSpaces['q'][2]) == "--" and \
-				self.getSpace(*rookKingPos['q'][0])[1] == "K" and self.getSpace(*rookKingPos['q'][1])[1] == "R" and ('q' in self.fen.castling):
-					availableMoves.append(Castle(self, startSpace, self.getSpace(*rookKingPos['q'][1]), rookKingPos['q'][0], rookKingPos['q'][1]))
+			if not self.isSquareCovered(unCheckableSpaces['q'][0], color)[0] and not self.isSquareCovered(unCheckableSpaces['q'][1], color)[0] and \
+				self.getSpace(clearSpaces['q'][0]) == "--" and self.getSpace(clearSpaces['q'][1]) == "--" and self.getSpace(clearSpaces['q'][2]) == "--" and \
+				self.getSpace(rookKingPos['q'][0])[1] == "K" and self.getSpace(rookKingPos['q'][1])[1] == "R" and ('q' in self.fen.castling):
+					availableMoves.append(Castle(self, startSpace, self.getSpace(rookKingPos['q'][1]), rookKingPos['q'][0], rookKingPos['q'][1]))
 
-			if not self.isSquareCovered(*unCheckableSpaces['k'][0], color)[0] and not self.isSquareCovered(*unCheckableSpaces['k'][1], color)[0] and \
-				self.getSpace(*clearSpaces['k'][0]) == "--" and self.getSpace(*clearSpaces['k'][1]) == "--" and \
-				self.getSpace(*rookKingPos['k'][0])[1] == "K" and self.getSpace(*rookKingPos['k'][1])[1] == "R" and ('k' in self.fen.castling):
-					availableMoves.append(Castle(self, startSpace, self.getSpace(*rookKingPos['k'][1]), rookKingPos['k'][0], rookKingPos['k'][1]))
+			if not self.isSquareCovered(unCheckableSpaces['k'][0], color)[0] and not self.isSquareCovered(unCheckableSpaces['k'][1], color)[0] and \
+				self.getSpace(clearSpaces['k'][0]) == "--" and self.getSpace(clearSpaces['k'][1]) == "--" and \
+				self.getSpace(rookKingPos['k'][0])[1] == "K" and self.getSpace(rookKingPos['k'][1])[1] == "R" and ('k' in self.fen.castling):
+					availableMoves.append(Castle(self, startSpace, self.getSpace(rookKingPos['k'][1]), rookKingPos['k'][0], rookKingPos['k'][1]))
 
 		if color == "w":
-			if not self.isSquareCovered(*unCheckableSpaces['Q'][0], color)[0] and not self.isSquareCovered(*unCheckableSpaces['Q'][1], color)[0] and \
-				self.getSpace(*clearSpaces['Q'][0]) == "--" and self.getSpace(*clearSpaces['Q'][1]) == "--" and self.getSpace(*clearSpaces['Q'][2]) == "--" and \
-				self.getSpace(*rookKingPos['Q'][0])[1] == "K" and self.getSpace(*rookKingPos['Q'][1])[1] == "R" and ('Q' in self.fen.castling):
-					availableMoves.append(Castle(self, startSpace, self.getSpace(*rookKingPos['Q'][1]), rookKingPos['Q'][0], rookKingPos['Q'][1]))
+			if not self.isSquareCovered(unCheckableSpaces['Q'][0], color)[0] and not self.isSquareCovered(unCheckableSpaces['Q'][1], color)[0] and \
+				self.getSpace(clearSpaces['Q'][0]) == "--" and self.getSpace(clearSpaces['Q'][1]) == "--" and self.getSpace(clearSpaces['Q'][2]) == "--" and \
+				self.getSpace(rookKingPos['Q'][0])[1] == "K" and self.getSpace(rookKingPos['Q'][1])[1] == "R" and ('Q' in self.fen.castling):
+					availableMoves.append(Castle(self, startSpace, self.getSpace(rookKingPos['Q'][1]), rookKingPos['Q'][0], rookKingPos['Q'][1]))
 
-			if not self.isSquareCovered(*unCheckableSpaces['K'][0], color)[0] and not self.isSquareCovered(*unCheckableSpaces['K'][1], color)[0] and \
-				self.getSpace(*clearSpaces['K'][0]) == "--" and self.getSpace(*clearSpaces['K'][1]) == "--" and \
-				self.getSpace(*rookKingPos['K'][0])[1] == "K" and self.getSpace(*rookKingPos['K'][1])[1] == "R" and ('K' in self.fen.castling):
-					availableMoves.append(Castle(self, startSpace, self.getSpace(*rookKingPos['K'][1]), rookKingPos['K'][0], rookKingPos['K'][1]))	
+			if not self.isSquareCovered(unCheckableSpaces['K'][0], color)[0] and not self.isSquareCovered(unCheckableSpaces['K'][1], color)[0] and \
+				self.getSpace(clearSpaces['K'][0]) == "--" and self.getSpace(clearSpaces['K'][1]) == "--" and \
+				self.getSpace(rookKingPos['K'][0])[1] == "K" and self.getSpace(rookKingPos['K'][1])[1] == "R" and ('K' in self.fen.castling):
+					availableMoves.append(Castle(self, startSpace, self.getSpace(rookKingPos['K'][1]), rookKingPos['K'][0], rookKingPos['K'][1]))	
 
 
 
@@ -612,6 +609,8 @@ class Board:
 		return total * perspective				
 
 	def makeMove(self, move :Move):
+		if move == None:
+			return
 		self.fen.switchTurns(self.board)
 		move.makeMove()
 		if move.pieceMoved[1] == "K":
@@ -742,6 +741,6 @@ class Board:
 				self.selectedIndex = index
 				self.selectedMoves = self.moveFunctions[self.getSpace(*index)[1]](*index)
 
-	def getSpace(self, x, y):
-		return self.board[y][x]
+	def getSpace(self, pos :int):
+		return self.board[pos]
 
