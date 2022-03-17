@@ -1,4 +1,3 @@
-from wsgiref.types import StartResponse
 from PygameExtensions import *
 
 class Move:
@@ -23,12 +22,24 @@ class Move:
 		return True
 	
 	def makeMove(self):
+		self.b.pieceLocationSet.add((self.pieceMoved, self.endPos))
+		self.b.pieceLocationSet.remove((self.pieceMoved, self.startPos))
+		if self.pieceTaken != "--":
+			self.b.pieceLocationSet.remove((self.pieceTaken, self.endPos))
+
 		self.b.board[self.endPos] = self.pieceMoved
 		self.b.board[self.startPos] = "--"
 
+
 	def undo(self):
+		self.b.pieceLocationSet.add((self.pieceMoved, self.startPos))
+		self.b.pieceLocationSet.remove((self.pieceMoved, self.endPos))
+		if self.pieceTaken != "--":
+			self.b.pieceLocationSet.add((self.pieceTaken, self.endPos))
+
 		self.b.board[self.endPos]   = self.pieceTaken
 		self.b.board[self.startPos] = self.pieceMoved
+
 	
 	def redo(self):
 		self.makeMove()
@@ -46,11 +57,19 @@ class EnPassant(Move):
 		return f"{self.pieceMoved}, {self.pieceTaken}, {self.startPos}, {self.endPos}, Enpassant"
 
 	def makeMove(self):
+		self.b.pieceLocationSet.add((self.pieceMoved, self.endPos))
+		self.b.pieceLocationSet.remove((self.pieceTaken, self.takenIndex))
+
+
 		self.b.board[self.endPos] = self.pieceMoved
 		self.b.board[self.startPos] = "--"
 		self.b.board[self.takenIndex] = "--"
 
 	def undo(self):
+		self.b.pieceLocationSet.add((self.pieceTaken, self.takenIndex))
+		self.b.pieceLocationSet.remove((self.pieceMoved, self.endPos))
+		self.b.pieceLocationSet.add((self.pieceMoved, self.startPos))
+
 		self.b.board[self.endPos]   = "--"
 		self.b.board[self.startPos] = self.pieceMoved
 		self.b.board[self.takenIndex] = self.pieceTaken
@@ -99,23 +118,31 @@ class Promotion():
 		# print(self.pawnMove.endPos)
 		# print(self.type)
 		return self.b.fen.getChessMove(self.pawnMove) + self.type.lower()
-	
-	def setPromotion(self, type):
-		self.promotedTo = type
-	
+
 	def makeMove(self):
 		self.pawnMove.makeMove()
 
-		self.pawnMove.b.board[self.pawnMove.startPos] = self.pawnMove.b.board[self.pawnMove.startPos][0] + self.type
+		self.pawnMove.b.board[self.pawnMove.endPos] = self.pawnMove.b.board[self.pawnMove.endPos][0] + self.type
 		self.pawnMove.b.waitingOnPromotion = False
+
+		self.pawnMove.b.pieceLocationSet.remove((self.pieceMoved, self.endPos))
+		self.pawnMove.b.pieceLocationSet.add((self.pawnMove.pieceMoved[0] + self.type, self.pawnMove.endPos))
 		
 		RenderPipeline.removeAsset(self.pawnMove.b.promotionDict["R"])
 		RenderPipeline.removeAsset(self.pawnMove.b.promotionDict["B"])
 		RenderPipeline.removeAsset(self.pawnMove.b.promotionDict["N"])
 		RenderPipeline.removeAsset(self.pawnMove.b.promotionDict["Q"])
 
+		self.pawnMove.b.resetPublicBoard()
+
+
 	def undo(self):
+		self.pawnMove.b.pieceLocationSet.remove((self.pawnMove.pieceMoved[0] + self.type, self.pawnMove.endPos))
+		self.pawnMove.b.pieceLocationSet.add((self.pieceMoved, self.endPos))
+
 		self.pawnMove.undo()
+	
+
 	
 	def redo(self):
 		self.makeMove()

@@ -1,6 +1,5 @@
-from tkinter import E
 from board import Board
-from move import Move
+from move import Castle, EnPassant, Move, Promotion
 import random
 
 
@@ -41,6 +40,24 @@ class AI:
 
 		for move in allMoves:
 			chessMove = board.fen.getChessMove(move)
+			if move.pieceTaken[1] == "K":
+				print(move)
+				print("Move caused fatal error 1")
+				break
+
+			# if move.pieceTaken[1] == "":
+			# 	print(move)
+			# 	print("Move caused fatal error 2")
+			# 	break
+
+			# if type(move) == Move:
+			# 	print(move, "i like penis 1")
+			# if type(move) == Promotion:
+			# 	print(move, "i like penis 2")
+			# if type(move) == Castle:
+			# 	print(move, "i like penis 3")
+			# if type(move) == EnPassant:
+			# 	print(move, "i like penis 4")
 
 			board.makeMove(move)
 			moveList.append((m-depth)*"\t" + chessMove)
