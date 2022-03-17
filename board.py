@@ -80,17 +80,19 @@ class Board:
 
 		self.pieceLocationSet = set()
 
+		self.kingMap = {
+			"w": -1,
+			"b": -1
+		}
+
 		for i in range(64):
 			if self.board[i] == "--":
 				continue
 
 			self.pieceLocationSet.add((self.board[i], i))
-			# if self.board[i][1] == "K":
-			# 	if self.board[i][0] == "w":
-			# 		self.whiteKingPos = i
-			# 		continue
-			# 	self.blackKingPos = i
-			# 	continue
+			if self.board[i][1] == "K":
+				self.kingMap[self.board[i][0]] = i
+
 
 		
 		temp = {
@@ -315,9 +317,10 @@ class Board:
 	def getPawnMoves(self, pos):
 		space = self.getSpace(pos)
 		color = space[0]
-		for piece in self.pieceLocationSet:
-			if piece[0] == color + "K":
-				kingPos = piece[1]
+		# for piece in self.pieceLocationSet:
+		# 	if piece[0] == color + "K":
+		# 		kingPos = piece[1]
+		kingPos = self.kingMap[color]
 
 		inCheck, pins, checks = self.isSquareCovered(kingPos, color)
 		piecePinned = False
@@ -414,7 +417,7 @@ class Board:
 		# 		availableMoves.pop(i)
 			
 		# 	self.undoMove()
-		self.removeInvalidMoves(availableMoves, self.isSquareCovered(kingPos, color) + (kingPos,))
+		self.removeInvalidMoves(availableMoves, (inCheck, pins, checks, kingPos,))
 
 		# test enPassantMove
 		if enPassantIndex != -1:
@@ -423,7 +426,7 @@ class Board:
 			enPassantMove.makeMove()
 
 			if self.isSquareCovered(kingPos, color)[0]:
-				print("removed enpassant")
+				# print("removed enpassant")
 				availableMoves.pop(enPassantIndex)
 			
 			enPassantMove.undo()
@@ -527,6 +530,7 @@ class Board:
 				checks.append((testedPos, m))
 					
 		# print("End of pin check")
+		# print(inCheck, pins, checks)
 
 		return (inCheck, pins, checks)
 
@@ -623,13 +627,24 @@ class Board:
 	def getAllMoves(self) -> list[Move]:
 		color = self.fen.colorToMove
 		totalMoves = []
-		for piece in self.pieceLocationSet:
-			if piece[0] == color + "K":
-				kingPos = piece[1]
+		# for piece in self.pieceLocationSet:
+		# 	if piece[0] == color + "K":
+		# 		self.kingMap[color] = piece[1]
 
-		for activePiece in self.pieceLocationSet:
-			if activePiece[0][0] == color:
-				totalMoves.extend(self.moveFunctions[activePiece[0][1]](activePiece[1]))
+		# for activePiece in self.pieceLocationSet:
+		# 	if activePiece[0][0] == "-":
+		# 		print(activePiece)
+		# 	if activePiece[0][1] == "-":
+		# 		print(activePiece)
+		# 	if activePiece[0][0] == color:
+		# 		totalMoves.extend(self.moveFunctions[activePiece[0][1]](activePiece[1]))
+
+		for i in range(len(self.board)):
+			if self.board[i][0] == color:
+				if self.board[i][1] == "K":
+					self.kingMap[self.board[i][0]] = i
+
+				totalMoves.extend(self.moveFunctions[self.board[i][1]](i))
 		
 		return totalMoves
 
@@ -648,8 +663,10 @@ class Board:
 				
 		# 		total += self.valueDict[self.board[i][j][1]]
 
-		for k, v in self.pieceMap[self.fen.colorToMove].items():
-			total += self.valueDict[k[0][1]]
+		for k, v in self.pieceLocationSet:
+			if k[1] == "K":
+				continue
+			total += self.valueDict[k[1]]
 		
 		return total * perspective				
 
@@ -658,8 +675,8 @@ class Board:
 		# 	return
 		self.fen.switchTurns(self.board)
 		move.makeMove()
-		# if move.pieceMoved[1] == "K":
-		# 	self.kingMap[move.pieceMoved[0]] = move.endPos
+		if move.pieceMoved[1] == "K":
+			self.kingMap[move.pieceMoved[0]] = move.endPos
 		self.checkForEnPassant(move)
 		self.checkCastling(move)
 		# self.checkForCheckmate()

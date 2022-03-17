@@ -1,4 +1,3 @@
-from wsgiref.types import StartResponse
 from PygameExtensions import *
 
 class Move:
@@ -134,7 +133,7 @@ class Promotion():
 		RenderPipeline.removeAsset(self.pawnMove.b.promotionDict["N"])
 		RenderPipeline.removeAsset(self.pawnMove.b.promotionDict["Q"])
 
-		self.pawnMove.b.resetPublicBoard()
+		# self.pawnMove.b.resetPublicBoard()
 
 
 	def undo(self):

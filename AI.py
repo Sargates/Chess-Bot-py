@@ -16,7 +16,7 @@ class AI:
 
 	def __init__(self) -> None:
 		self.totalMoves = 0
-		self.maxDepth = 2
+		self.maxDepth = 3
 		self.depthList = {x: 0 for x in range(5)}
 		self.stateList = {}
 		self.captures = 0
@@ -41,7 +41,7 @@ class AI:
 		for move in allMoves:
 			chessMove = board.fen.getChessMove(move)
 			if move.pieceTaken[1] == "K":
-				print(move)
+				# print(move)
 				print("Move caused fatal error 1")
 				break
 
@@ -66,7 +66,6 @@ class AI:
 			oneStepDeep = self.getTotalMoves(depth-1, board, m, moveList)
 
 			
-			fkjhadsljfhasdkjlfh = print(f"{move}: {oneStepDeep}") if (depth == m and depth != 1) else None
 
 			numPositions += oneStepDeep
 			# print(f"{m}\t{numPositions}", end="\r")
@@ -78,20 +77,23 @@ class AI:
 		return numPositions
 
 	def getMove(self, board :Board) -> Move:
+		print(board.fen.colorToMove)
 		self.totalMoves = 0
 		allMoves = board.getAllMoves()
 
 		bestMove = None
 		bestEval = -(2**31)
 
-		kingPos = board.kingMap[board.fen.colorToMove]
-		print(len(allMoves))
+		# kingPos = board.kingMap[board.fen.colorToMove]
+		# print(len(allMoves))
 
 		for move in allMoves:
+			# print(board.fen.getChessMove(move))
+			# print(move.pieceMoved)
 			board.makeMove(move)
 
-			iterEval = -self.search(self.maxDepth, board)
-			# print(f"{move}: {1}, {iterEval}")
+			# print(f"{move}: {1}")
+			iterEval = -self.search(self.maxDepth-1, board)
 
 			if bestEval < iterEval:
 				bestEval = iterEval
@@ -105,28 +107,33 @@ class AI:
 	def search(self, depth, board :Board) -> int:
 		if depth == 0:
 			return board.evalBoard()
+
 		allMoves = board.getAllMoves()
 
+
+	
 		if len(allMoves) == 0:
 			return -(2**31)
 
-	
 		kingPos = board.kingMap[board.fen.colorToMove]
 		
-		if board.isSquareCovered(*kingPos, board.fen.colorToMove)[0]:
+		# if depth == self.maxDepth - 1:
+		# 	print(kingPos, board.getSpace(kingPos))
+		
+		if board.isSquareCovered(kingPos, board.fen.colorToMove)[0]:
 			return -(2**31)+1
 
-
-
 		eval = -(2**31)
+
 
 		for move in allMoves:
 			board.makeMove(move)
 
+
+			tabDepth = (self.maxDepth-depth)*'\t'
+			# frafarsfesf = print(f"{tabDepth}{move}: {self.maxDepth-depth+1}") if depth > self.maxDepth - 2 else None
 			eval = max(eval, -self.search(depth-1, board))
 			# print(f"{move}\t{eval}", end="\n")
-			tabDepth = (self.maxDepth-depth)*'\t'
-			# print(f"{tabDepth}{move}: {self.maxDepth-depth+1}, {eval}")
 
 			board.undoMove()
 

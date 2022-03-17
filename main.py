@@ -55,22 +55,23 @@ def printBoard(board :list[str]):
 	return string
 
 def renderPieces(b :Board):
+	# print("penis")
 	# if b.aiInProgress:
 	# 	return
 
 	for i in range(len(b.publicBoard)):
 		space = b.publicBoard[i]
 		# print(j, i, "", space)
-		if space == "":
-			print(i)
-			print("SPACE == \"\"")
-			for move in board.moveHistory.copy():
-				print(move)
+		# if space == "":
+		# 	print(i)
+		# 	print("SPACE == \"\"")
+		# 	for move in board.moveHistory.copy():
+		# 		print(move)
 
-			print(printBoard(b.board.copy()))
+		# 	print(printBoard(b.publicBoard.copy()))
 
-			for piece in b.pieceLocationSet.copy():
-				print(piece)
+		# 	for piece in b.pieceLocationSet.copy():
+		# 		print(piece)
 		if space != "--":
 			SCREEN.blit((b.images[b.idToIndex[space]]), (OFFSET + (i%8*SQ_SIZE)+SQ_SIZE/2 - PIECE_OFFSET, OFFSET + (i//8*SQ_SIZE)+SQ_SIZE/2 - PIECE_OFFSET))
 
@@ -105,6 +106,7 @@ def render(board : Board):
 	while True:
 		if exitEvent.is_set():
 			break
+		
 		SCREEN.fill((255, 255, 255))
 		
 		RenderPipeline.execRenderMethods()
@@ -140,6 +142,7 @@ def main():
 			if e.type == pygame.MOUSEBUTTONDOWN:
 				index = getPosToIndex(*mousePos)
 				# print(index)
+				board.resetPublicBoard()
 				if board.waitingOnPromotion:
 					continue
 
@@ -181,55 +184,48 @@ def main():
 
 					print()
 
+					# aiMove = ai.getMove(board)
+
+					# board.makeMove(aiMove)
+
+					# board.resetPublicBoard()
+
+					# allMoves = board.getAllMoves()
+
+					# for move in allMoves:
+					# 	print(move)
+
+
 					moveLists = {
 
 					}
 
-
-					# for i, square in enumerate(board.numSquaresToEdge):
-					# 	print(i)
-					# 	string = ""
-					# 	for j, num in enumerate(square):
-					# 		string += str(num) + " "
-					# 		if (j+1) % 4 == 0:
-					# 			string += "   "
-						
-					# 	print(f"\t{string}")
-
-					
-
-					for k, v in ai.depthList.items():
-						moveLists[k] = []
-						ai.depthList[k] = ai.getTotalMoves(k, board, k, moveLists[k])
-						print(f"{k}\t{ai.depthList[k]}")
+					# for k, v in ai.depthList.items():
+					# 	moveLists[k] = []
+					# 	ai.depthList[k] = ai.getTotalMoves(k, board, k, moveLists[k])
+					# 	print(f"{k}\t{ai.depthList[k]}")
 
 					# print()
 
 					# aiMove = ai.getMove(board)
-
 					# board.makeMove(aiMove)
+					# print(f"Move made, {aiMove}")
 					# board.resetPublicBoard()
+
+
+
 					# for string in board.fen.history:
 					# 	print(string)
 					# print()
 
 					print(f"Current FEN String\n{board.fen.getFenString(board.board)}")
-		
-		# if (board.checkMate or board.matchDraw) and not checkmatePrinting:
-		# 	print("Game Over")
-		# 	print("Ending FEN String\n", board.fen.getFenString(board.board))
-		# 	print(f"checkMate = {board.checkMate}")
-		# 	print(f"matchDraw = {board.matchDraw}")
-		# 	continue
 
-		# if board.fen.colorToMove == "b" and not (board.checkMate or board.matchDraw):
-		# 	aiMove = ai.getMove(board)
+		if board.fen.colorToMove == "b" and not (board.checkMate or board.matchDraw):
+			aiMove = ai.getMove(board)
 
-		# 	board.makeMove(aiMove)
-		# 	# print(board.publicBoard == board.board)
-		# 	# board.publicBoard = board.board.copy()
-		# 	board.resetPublicBoard()
-		# 	print("done")
+			board.makeMove(aiMove)
+
+			board.resetPublicBoard()
 
 		
 
