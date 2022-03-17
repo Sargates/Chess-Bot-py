@@ -44,7 +44,7 @@ class Fen:
 		self.fullMoveCount = int(fullMoveCount)
 
 	def getChessMove(self, move :Move) -> str:
-		return self.colsToFiles[move.startPos[0]]+self.rowsToRanks[move.startPos[1]] + self.colsToFiles[move.endPos[0]]+self.rowsToRanks[move.endPos[1]]
+		return self.colsToFiles[move.startPos%8]+self.rowsToRanks[move.startPos//8] + self.colsToFiles[move.endPos%8]+self.rowsToRanks[move.endPos//8]
 
 	def refresh(self):
 		board, colorToMove, castling, enPassant, halfMoveCount, fullMoveCount = self.string.split(" ")
@@ -75,13 +75,13 @@ class Fen:
 	def getEnPassantPos(self):
 		if self.enPassant == "-":
 			return None
-		return (self.filesToCols[self.enPassant[0]], self.ranksToRows[self.enPassant[1]])
+		return self.filesToCols[self.enPassant[0]] + self.ranksToRows[self.enPassant[1]]*8
 	
 	def setEnPassant(self, index):
 		if index == None:
 			self.enPassant = "-"
 			return
-		self.enPassant = self.colsToFiles[index[0]] + self.rowsToRanks[index[1]]
+		self.enPassant = self.colsToFiles[index%8] + self.rowsToRanks[index//8]
 	
 	def promotePawn(self, b, position):
 		b[position] = b[position][0]+"Q"
