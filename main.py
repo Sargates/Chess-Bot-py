@@ -1,3 +1,4 @@
+from re import X
 import pygame, threading
 from PygameExtensions import *
 from board import Board
@@ -13,6 +14,7 @@ OFFSET = 40 * (WIDTH/256)
 PIECE_OFFSET = (10/11) * SQ_SIZE / 2
 
 exitEvent = threading.Event()
+aiRunning = threading.Event()
 
 
 board = Board()
@@ -114,6 +116,27 @@ def render(board : Board):
 
 		pygame.display.update()
 
+def handleAI():
+	while True:
+		if not aiRunning.is_set():
+			continue
+
+
+		# moveLists = {}
+		# for k, v in ai.depthList.items():
+		# 	moveLists[k] = []
+		# 	ai.depthList[k] = ai.getTotalMoves(k, board, k, moveLists[k])
+		# 	print(f"{k}\t{ai.depthList[k]}")
+		
+		allMoves = ai.getMove(board)
+		board.makeMove(allMoves)
+		board.resetPublicBoard()
+
+		aiRunning.clear()
+		print("aiRunning = False")
+
+
+
 def main():
 
 
@@ -127,8 +150,20 @@ def main():
 	RenderPipeline.addMethod(renderPieces, board)
 	RenderPipeline.addMethod(renderMoves, board)
 
+	useAI = [bool(0)]
+
+	def cum(list, index):
+		list[index] = not list[index]
+
+	RenderPipeline.addAsset(Box(pygame.Rect(678, 678, 60, 60), color=(255, 0, 0), isDraggable=False, action=cum, args=(useAI, 0)))
+
 	renderThread = threading.Thread(target=render, args=(board,), name="Render Thread")
 	renderThread.start()
+
+	aiThread = threading.Thread(target=handleAI, name="AI Thread")
+	aiThread.start()
+
+
 
 	while run:
 		mousePos = pygame.mouse.get_pos()
@@ -137,6 +172,7 @@ def main():
 			if e.type == pygame.QUIT:
 				exitEvent.set()
 				renderThread.join()
+				aiThread.join()
 				pygame.quit()
 				quit()
 			if e.type == pygame.MOUSEBUTTONDOWN:
@@ -182,7 +218,7 @@ def main():
 
 				elif e.key == pygame.K_v: # debug hotkey
 
-					print()
+					print(useAI)
 
 					# aiMove = ai.getMove(board)
 
@@ -196,14 +232,12 @@ def main():
 					# 	print(move)
 
 
-					moveLists = {
-
-					}
-
+					# moveLists = {}
 					# for k, v in ai.depthList.items():
 					# 	moveLists[k] = []
 					# 	ai.depthList[k] = ai.getTotalMoves(k, board, k, moveLists[k])
 					# 	print(f"{k}\t{ai.depthList[k]}")
+					# aiRunning.set()
 
 					# print()
 
@@ -220,12 +254,10 @@ def main():
 
 					print(f"Current FEN String\n{board.fen.getFenString(board.board)}")
 
-		if board.fen.colorToMove == "b" and not (board.checkMate or board.matchDraw):
-			aiMove = ai.getMove(board)
+		if useAI[0] and board.fen.colorToMove == "b" and not aiRunning.is_set():
+			aiRunning.set()
+			print("aiRunning = True")
 
-			board.makeMove(aiMove)
-
-			board.resetPublicBoard()
 
 		
 

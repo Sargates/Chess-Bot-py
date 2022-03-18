@@ -1,6 +1,6 @@
 from board import Board
 from move import Castle, EnPassant, Move, Promotion
-import random
+import random, time
 
 
 class AI:
@@ -16,7 +16,7 @@ class AI:
 
 	def __init__(self) -> None:
 		self.totalMoves = 0
-		self.maxDepth = 3
+		self.maxDepth = 4
 		self.depthList = {x: 0 for x in range(5)}
 		self.stateList = {}
 		self.captures = 0
@@ -27,6 +27,9 @@ class AI:
 	def getTotalMoves(self, depth :int, board :Board, m=None, moveList :list[str]=[]):
 		if m == None:
 			m = depth
+
+		if m - depth == 0:
+			startTime = time.time()
 
 		if depth == 0:
 			return 1
@@ -40,10 +43,10 @@ class AI:
 
 		for move in allMoves:
 			chessMove = board.fen.getChessMove(move)
-			if move.pieceTaken[1] == "K":
-				# print(move)
-				print("Move caused fatal error 1")
-				break
+			# if move.pieceTaken[1] == "K":
+			# 	# print(move)
+			# 	print("Move caused fatal error 1")
+			# 	break
 
 			# if move.pieceTaken[1] == "":
 			# 	print(move)
@@ -73,11 +76,14 @@ class AI:
 
 			board.undoMove()
 
+		if m - depth == 0:
+			endTime = time.time()
+			print(f"Depth {depth}: {endTime - startTime}")
 
 		return numPositions
 
 	def getMove(self, board :Board) -> Move:
-		print(board.fen.colorToMove)
+		startTime = time.time()
 		self.totalMoves = 0
 		allMoves = board.getAllMoves()
 
@@ -102,6 +108,10 @@ class AI:
 
 			board.undoMove()
 		
+
+		endTime = time.time()
+
+		print(endTime - startTime)
 		return bestMove
 	
 	def search(self, depth, board :Board) -> int:

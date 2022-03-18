@@ -117,7 +117,7 @@ class Board:
 
 		self.directionsToSquaresFromEdge = {v: k for k, v in temp.items()}
 
-		self.numSquaresToEdge = [[0 for x in range(16)] for x in range(64)]
+		self.numSquaresToEdge = {x: [0 for x in range(16)] for x in range(64)}
 
 		for squareIndex in range(len(self.numSquaresToEdge)):
 			y = squareIndex // 8
@@ -627,15 +627,16 @@ class Board:
 	def getAllMoves(self) -> list[Move]:
 		color = self.fen.colorToMove
 		totalMoves = []
-		# for piece in self.pieceLocationSet:
-		# 	if piece[0] == color + "K":
-		# 		self.kingMap[color] = piece[1]
+
+		for piece in self.pieceLocationSet:
+			if piece[0] == color + "K":
+				self.kingMap[color] = piece[1]
 
 		# for activePiece in self.pieceLocationSet:
-		# 	if activePiece[0][0] == "-":
-		# 		print(activePiece)
-		# 	if activePiece[0][1] == "-":
-		# 		print(activePiece)
+		# 	# if activePiece[0][0] == "-":
+		# 	# 	print(activePiece)
+		# 	# if activePiece[0][1] == "-":
+		# 	# 	print(activePiece)
 		# 	if activePiece[0][0] == color:
 		# 		totalMoves.extend(self.moveFunctions[activePiece[0][1]](activePiece[1]))
 
@@ -676,6 +677,7 @@ class Board:
 		self.fen.switchTurns(self.board)
 		move.makeMove()
 		if move.pieceMoved[1] == "K":
+			# print("here")
 			self.kingMap[move.pieceMoved[0]] = move.endPos
 		self.checkForEnPassant(move)
 		self.checkCastling(move)
@@ -714,14 +716,6 @@ class Board:
 				return
 
 			tempMove = Move(self, space, self.getSpace(index), self.selectedIndex, index)
-			tempMoveInSelectedMoves = False
-
-			# for selectedMove in self.selectedMoves:
-			# 	if tempMove == selectedMove:
-			# 		tempMoveInSelectedMoves = True
-			# 	if type(selectedMove) == Promotion:
-			# 		self.waitingOnPromotion = True
-			# 		# return
 
 			# if self.waitingOnPromotion:
 			# 	RenderPipeline.addAsset(self.rookPromotion)
