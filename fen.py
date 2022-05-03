@@ -56,15 +56,24 @@ class Fen:
 		self.halfMoveCount = int(halfMoveCount)
 		self.fullMoveCount = int(fullMoveCount)
 
+	def switchTurns(self, board):
+		string = self.getFenString(board)
+		# print(string)
+		if self.colorToMove == "w":
+			self.colorToMove = "b"
+			return
+		self.colorToMove = "w"
+		self.fullMoveCount += 1
+
 	def undo(self):
+		# self.future.append(self.string)
 		state = self.history.pop(-1)
-		self.future.append(self.string)
 		self.string = state
 		self.refresh()
 	
 	def redo(self):
+		# self.history.append(self.string)
 		state = self.future.pop(-1)
-		self.history.append(self.string)
 		self.string = state
 		self.refresh()
 
@@ -139,13 +148,4 @@ class Fen:
 		self.string = f"{self.board} {self.colorToMove} {''.join(self.castling)} {self.enPassant} {self.halfMoveCount} {self.fullMoveCount}"
 		return self.string
 
-	def switchTurns(self, board):
-		string = self.getFenString(board)
-		# print(string)
-		self.history.append(string)
-		if self.colorToMove == "w":
-			self.colorToMove = "b"
-			return
-		self.colorToMove = "w"
-		self.fullMoveCount += 1
 		

@@ -1,5 +1,4 @@
-from re import X
-import pygame, threading
+import pygame, threading, setup
 from PygameExtensions import *
 from board import Board
 from move import Move
@@ -8,7 +7,7 @@ from AI import AI
 WIDTH = HEIGHT = 768
 WINDOWSIZE = (WIDTH, HEIGHT)
 SCREEN = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("The cool")
+pygame.display.set_caption("Chess Bot")
 SQ_SIZE = ((256 - 80)/8) * (WIDTH/256)
 OFFSET = 40 * (WIDTH/256)
 PIECE_OFFSET = (10/11) * SQ_SIZE / 2
@@ -57,7 +56,6 @@ def printBoard(board :list[str]):
 	return string
 
 def renderPieces(b :Board):
-	# print("penis")
 	# if b.aiInProgress:
 	# 	return
 
@@ -118,8 +116,12 @@ def render(board : Board):
 
 def handleAI():
 	while True:
+		if exitEvent.is_set():
+			break
 		if not aiRunning.is_set():
 			continue
+
+		print("AI is running")
 
 
 		# moveLists = {}
@@ -128,12 +130,17 @@ def handleAI():
 		# 	ai.depthList[k] = ai.getTotalMoves(k, board, k, moveLists[k])
 		# 	print(f"{k}\t{ai.depthList[k]}")
 		
-		allMoves = ai.getMove(board)
-		board.makeMove(allMoves)
-		board.resetPublicBoard()
+		aiMove = ai.getMove(board)
+		if aiMove:
+			board.fen.refreshBoard(board.board)
+			board.makeMove(aiMove)
+			board.resetPublicBoard()
+		else:
+			board.checkMate = True
 
-		aiRunning.clear()
 		print("aiRunning = False")
+		aiRunning.clear()
+
 
 
 
@@ -150,12 +157,14 @@ def main():
 	RenderPipeline.addMethod(renderPieces, board)
 	RenderPipeline.addMethod(renderMoves, board)
 
-	useAI = [bool(0)]
+	useAI = [bool(1)]
 
-	def cum(list, index):
+	def buttonMethodForAiUsage(list, index):
+		# this method is needed to be able to mutate the booleon using the Box Class
 		list[index] = not list[index]
-
-	RenderPipeline.addAsset(Box(pygame.Rect(678, 678, 60, 60), color=(255, 0, 0), isDraggable=False, action=cum, args=(useAI, 0)))
+	
+	# THIS LINE IS TO 
+	# RenderPipeline.addAsset(Box(pygame.Rect(678, 678, 60, 60), color=(255, 0, 0), isDraggable=False, action=buttonMethodForAiUsage, args=(useAI, 0)))
 
 	renderThread = threading.Thread(target=render, args=(board,), name="Render Thread")
 	renderThread.start()
@@ -169,6 +178,9 @@ def main():
 		mousePos = pygame.mouse.get_pos()
 
 		for e in pygame.event.get():
+			if aiRunning.is_set():
+				break
+
 			if e.type == pygame.QUIT:
 				exitEvent.set()
 				renderThread.join()
@@ -200,25 +212,63 @@ def main():
 						
 			if e.type == pygame.KEYDOWN:
 				if e.key == pygame.K_z and len(board.moveHistory) > 0:
+					# print(board.fen.colorToMove)
+					# for move in board.moveHistory:
+					# 	print("\t", move)
+					# print(board.fen.history)
+					# print(board.fen.future)
+					board.fen.refreshBoard(board.board)
 					board.undoMove()
-					# board.undoMove()
+					# print(board.fen.history)
+					# print(board.fen.future)
+					# for move in board.moveHistory:
+					# 	print("\t", move)
+					board.fen.refreshBoard(board.board)
+					board.undoMove()
+					# print(board.fen.history)
+					# print(board.fen.future)
+
 
 
 					board.fen.refreshBoard(board.board)
 					board.resetPublicBoard()
+					# print("\n\n\n")
+
+					# print(board.fen.colorToMove)
 
 				elif e.key == pygame.K_y and len(board.moveFuture) > 0:
-					board.makeMove(board.moveFuture.pop(-1))
-					# board.makeMove(board.moveFuture.pop(-1))
-					# board.fen.redo()
-					board.fen.redo()
+					# print(board.fen.colorToMove)
 
+					# print(board.fen.history)
+					# print(board.fen.future)
+
+					board.makeMove(board.moveFuture.pop(-1))
+					# print(board.fen.colorToMove)
+					
+					# print(board.fen.history)
+					# print(board.fen.future)
+					board.fen.redo()
+					# print(board.fen.colorToMove)
+					
+					# print(board.fen.history)
+					# print(board.fen.future)
+					board.makeMove(board.moveFuture.pop(-1))
+					# print(board.fen.colorToMove)
+					
+					# print(board.fen.history)
+					# print(board.fen.future)
+					board.fen.redo()
+					# print(board.fen.colorToMove)
+					
+					# print(board.fen.history)
+					# print(board.fen.future)
 					board.fen.refreshBoard(board.board)
 					board.resetPublicBoard()
+					# print("\n\n\n")
 
 				elif e.key == pygame.K_v: # debug hotkey
 
-					print(useAI)
+					print(board.fen.colorToMove)
 
 					# aiMove = ai.getMove(board)
 
@@ -251,12 +301,16 @@ def main():
 					# for string in board.fen.history:
 					# 	print(string)
 					# print()
+					print(board.fen.history)
+					print(board.fen.future)
 
 					print(f"Current FEN String\n{board.fen.getFenString(board.board)}")
 
-		if useAI[0] and board.fen.colorToMove == "b" and not aiRunning.is_set():
+		if board.fen.colorToMove == "b" and not aiRunning.is_set():
+			# ai.getTotalMoves(AI.maxDepth, board)
+
+			# print("aiRunning = True")
 			aiRunning.set()
-			print("aiRunning = True")
 
 
 		
