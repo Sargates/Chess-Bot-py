@@ -1,4 +1,3 @@
-from re import X
 import pygame, threading
 from PygameExtensions import *
 from board import Board
@@ -103,7 +102,7 @@ def renderSelected(b :Board):
 		square = pygame.Rect(x-SQ_SIZE/2, y-SQ_SIZE/2, SQ_SIZE, SQ_SIZE)
 		pygame.draw.rect(SCREEN, (255, 0, 0), square, 2)
 
-def render(board : Board):
+def render():
 
 	while True:
 		if exitEvent.is_set():
@@ -157,7 +156,7 @@ def main():
 
 	RenderPipeline.addAsset(Box(pygame.Rect(678, 678, 60, 60), color=(255, 0, 0), isDraggable=False, action=cum, args=(useAI, 0)))
 
-	renderThread = threading.Thread(target=render, args=(board,), name="Render Thread")
+	renderThread = threading.Thread(target=render, name="Render Thread")
 	renderThread.start()
 
 	aiThread = threading.Thread(target=handleAI, name="AI Thread")
