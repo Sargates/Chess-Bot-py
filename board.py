@@ -69,7 +69,7 @@ class Board:
 		self.resetPublicBoard()
 		
 
-		self.moveFunctions = {
+		self.pieceMoveFunctions = {
 			'p': self.getPawnMoves, 
 			'R': self.getRookMoves, 
 			'N': self.getKnightMoves, 
@@ -129,14 +129,14 @@ class Board:
 			east = 7 - x
 
 			# QUEEN SLIDING MOVES
-			self.numSquaresToEdge[squareIndex][ 0] = north
-			self.numSquaresToEdge[squareIndex][ 1] = south
-			self.numSquaresToEdge[squareIndex][ 2] = west
-			self.numSquaresToEdge[squareIndex][ 3] = east
-			self.numSquaresToEdge[squareIndex][ 4] = min(north, west)
-			self.numSquaresToEdge[squareIndex][ 5] = min(south, east)
-			self.numSquaresToEdge[squareIndex][ 6] = min(north, east)
-			self.numSquaresToEdge[squareIndex][ 7] = min(south, west)
+			self.numSquaresToEdge[squareIndex][0] = north
+			self.numSquaresToEdge[squareIndex][1] = south
+			self.numSquaresToEdge[squareIndex][2] = west
+			self.numSquaresToEdge[squareIndex][3] = east
+			self.numSquaresToEdge[squareIndex][4] = min(north, west)
+			self.numSquaresToEdge[squareIndex][5] = min(south, east)
+			self.numSquaresToEdge[squareIndex][6] = min(north, east)
+			self.numSquaresToEdge[squareIndex][7] = min(south, west)
 
 			
 			for knightIndex in range(8, 16):
@@ -144,9 +144,7 @@ class Board:
 
 				knightSquareY = knightJumpSquare // 8
 				knightSquareX = knightJumpSquare % 8
-				# Ensure knight has moved max of 2 squares on x/y axis (to reject indices that have wrapped around side of board)
 				maxCoordMoveDst = max(abs(x - knightSquareX), abs(y - knightSquareY))
-				# self.numSquaresToEdge[squareIndex][i] = 0
 
 				if (maxCoordMoveDst == 2):
 					self.numSquaresToEdge[squareIndex][knightIndex] = 1
@@ -265,55 +263,6 @@ class Board:
 		else:
 			moves = []
 
-	def getPieceMoves(self, startingPos, directions, moveDepths):
-		color = self.getSpace(startingPos)[0]
-		for piece in self.pieceLocationSet:
-			if piece[0] == color + "K":
-				kingPos = piece[1]
-
-		inCheck, pins, checks = self.isSquareCovered(kingPos, color)
-		piecePinned = False
-		availableMoves = []
-
-
-		for x in range(len(pins)-1, -1, -1):
-			# print("STARTING ITER")
-			# print(pins[x])
-			# print(i, j)
-			if pins[x][0] == startingPos:
-				piecePinned = True
-				pinDirection = (pins[x][1])
-				# print("pin found")
-				# print(pins[x])
-				pins.pop(x)
-				break
-
-		# print(f"piecePinned = {piecePinned}")
-		for direction in directions:
-			if piecePinned and not (direction == pinDirection or direction == (-pinDirection)):
-				# print(f"direction == pinDirection = {direction == pinDirection}")
-				continue
-
-			for depth in moveDepths:
-				if not self.isMoveInbounds(startingPos, direction, depth):
-					break
-
-				startPos = startingPos
-				endPos = startingPos + direction * depth
-				startSpace = self.getSpace(startPos)
-				endSpace = self.getSpace(endPos)
-				if endSpace == "--":
-					availableMoves.append(Move(self, startSpace, endSpace, startPos, endPos))
-					continue
-				
-				if endSpace[0] != startSpace[0]:
-					availableMoves.append(Move(self, startSpace, endSpace, startPos, endPos))
-				break
-		
-		# print(startingPos)
-		self.removeInvalidMoves(availableMoves, (inCheck, pins, checks, kingPos))
-		
-		return availableMoves
 	def getPawnMoves(self, pos):
 		space = self.getSpace(pos)
 		color = space[0]
@@ -432,6 +381,11 @@ class Board:
 			enPassantMove.undo()
 		
 		return availableMoves
+
+
+
+
+
 	def getKnightMoves(self, pos):
 		directions = [6, 15, 17, 10, -6, -15, -17, -10]
 		moveDepths = [1]
@@ -453,7 +407,57 @@ class Board:
 
 		return self.getPieceMoves(pos, directions, moveDepths)
 
-	def isMoveInbounds(self, pos, dir, depth=1):
+	def getPieceMoves(self, startingPos, directions, moveDepths):
+		color = self.getSpace(startingPos)[0]
+		for piece in self.pieceLocationSet:
+			if piece[0] == color + "K":
+				kingPos = piece[1]
+
+		inCheck, pins, checks = self.isSquareCovered(kingPos, color)
+		piecePinned = False
+		availableMoves = []
+
+
+		for x in range(len(pins)-1, -1, -1):
+			# print("STARTING ITER")
+			# print(pins[x])
+			# print(i, j)
+			if pins[x][0] == startingPos:
+				piecePinned = True
+				pinDirection = (pins[x][1])
+				# print("pin found")
+				# print(pins[x])
+				pins.pop(x)
+				break
+
+		# print(f"piecePinned = {piecePinned}")
+		for direction in directions:
+			if piecePinned and not (direction == pinDirection or direction == (-pinDirection)):
+				# print(f"direction == pinDirection = {direction == pinDirection}")
+				continue
+
+			for depth in moveDepths:
+				if not self.isMoveInbounds(startingPos, direction, depth):
+					break
+
+				startPos = startingPos
+				endPos = startingPos + direction * depth
+				startSpace = self.getSpace(startPos)
+				endSpace = self.getSpace(endPos)
+				if endSpace == "--":
+					availableMoves.append(Move(self, startSpace, endSpace, startPos, endPos))
+					continue
+				
+				if endSpace[0] != startSpace[0]:
+					availableMoves.append(Move(self, startSpace, endSpace, startPos, endPos))
+				break
+		
+		# print(startingPos)
+		self.removeInvalidMoves(availableMoves, (inCheck, pins, checks, kingPos))
+		
+		return availableMoves
+
+	def isMoveInbounds(self, pos, dir, depth=1) -> bool:
 		if not (0 <= pos + dir*depth < 64):
 			return False
 
@@ -547,7 +551,6 @@ class Board:
 
 		for direction in directions:
 			if not self.isMoveInbounds(startPos, direction):
-				# print(direction, "i like cum")
 				continue
 
 			endPos = startPos + direction
@@ -638,14 +641,14 @@ class Board:
 		# 	# if activePiece[0][1] == "-":
 		# 	# 	print(activePiece)
 		# 	if activePiece[0][0] == color:
-		# 		totalMoves.extend(self.moveFunctions[activePiece[0][1]](activePiece[1]))
+		# 		totalMoves.extend(self.pieceMoveFunctions[activePiece[0][1]](activePiece[1]))
 
 		for i in range(len(self.board)):
 			if self.board[i][0] == color:
 				if self.board[i][1] == "K":
 					self.kingMap[self.board[i][0]] = i
 
-				totalMoves.extend(self.moveFunctions[self.board[i][1]](i))
+				totalMoves.extend(self.pieceMoveFunctions[self.board[i][1]](i))
 		
 		return totalMoves
 
@@ -674,8 +677,9 @@ class Board:
 	def makeMove(self, move :Move):
 		# if None == move:
 		# 	return
-		self.fen.switchTurns(self.board)
+		self.fen.history.append(self.fen.getFenString(self.board))
 		move.makeMove()
+		self.fen.switchTurns(self.board)
 		if move.pieceMoved[1] == "K":
 			# print("here")
 			self.kingMap[move.pieceMoved[0]] = move.endPos
@@ -683,8 +687,10 @@ class Board:
 		self.checkCastling(move)
 		# self.checkForCheckmate()
 		self.moveHistory.append(move)
+		# self.fen.refreshBoard(self.board)
 
 	def undoMove(self):
+		self.fen.future.append(self.fen.getFenString(self.board))
 		move = self.moveHistory.pop(-1)
 		move.undo()
 		if type(move) == Promotion:
@@ -782,7 +788,7 @@ class Board:
 			# guarenteed that clicked index is a different piece than is selected
 			if self.getSpace(index)[0] == self.fen.colorToMove:
 				self.selectedIndex = index
-				self.selectedMoves = self.moveFunctions[self.getSpace(index)[1]](index)
+				self.selectedMoves = self.pieceMoveFunctions[self.getSpace(index)[1]](index)
 			else:
 				self.selectedIndex = None
 				self.selectedMoves = []
@@ -792,7 +798,7 @@ class Board:
 		if self.selectedIndex == None:
 			if self.getSpace(index) != "--":
 				self.selectedIndex = index
-				self.selectedMoves = self.moveFunctions[self.getSpace(index)[1]](index)
+				self.selectedMoves = self.pieceMoveFunctions[self.getSpace(index)[1]](index)
 
 	def getSpace(self, pos :int):
 		return self.board[pos]
